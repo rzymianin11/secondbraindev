@@ -10,6 +10,7 @@ import SearchBar from './SearchBar';
 import EditProjectModal from './EditProjectModal';
 import ImageAnalyzer from './ImageAnalyzer';
 import PriorityList from './PriorityList';
+import AIAssistant from './AIAssistant';
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -264,6 +265,11 @@ export default function ProjectDashboard() {
           />
         </section>
       )}
+
+      <AIAssistant 
+        projectId={Number(projectId)}
+        projectName={project.name}
+      />
     </div>
   );
 }

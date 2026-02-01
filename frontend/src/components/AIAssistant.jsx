@@ -1,0 +1,163 @@
+import { useState, useRef, useEffect } from 'react';
+import { askAssistant } from '../api';
+
+const QUICK_PROMPTS = [
+  { label: 'What should I do first?', prompt: 'What task should I focus on first and why?' },
+  { label: 'Summarize my tasks', prompt: 'Give me a quick summary of all my pending tasks' },
+  { label: 'Any blockers?', prompt: 'Are there any potential blockers or dependencies I should be aware of?' },
+  { label: 'Plan my day', prompt: 'Help me plan what to work on today based on priorities' },
+];
+
+export default function AIAssistant({ projectId, projectName }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  async function handleSend(customPrompt) {
+    const question = customPrompt || input.trim();
+    if (!question) return;
+
+    const userMessage = { role: 'user', content: question };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await askAssistant(projectId, question);
+      const assistantMessage = { 
+        role: 'assistant', 
+        content: response.answer,
+        context: response.context 
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (err) {
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error. Please try again.',
+        error: true 
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  return (
+    <>
+      {/* Floating Button */}
+      <button 
+        className={`ai-assistant-btn ${isOpen ? 'open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        title="AI Assistant"
+      >
+        {isOpen ? '✕' : '🤖'}
+      </button>
+
+      {/* Chat Panel */}
+      {isOpen && (
+        <div className="ai-assistant-panel">
+          <div className="ai-assistant-header">
+            <div className="ai-header-info">
+              <span className="ai-avatar">🤖</span>
+              <div>
+                <h3>AI Assistant</h3>
+                <p>Helping with {projectName}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="ai-assistant-messages">
+            {messages.length === 0 && (
+              <div className="ai-welcome">
+                <p>Hi! I can help you with your project tasks.</p>
+                <p className="ai-welcome-hint">Try asking:</p>
+                <div className="ai-quick-prompts">
+                  {QUICK_PROMPTS.map((item, i) => (
+                    <button
+                      key={i}
+                      className="quick-prompt-btn"
+                      onClick={() => handleSend(item.prompt)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((msg, i) => (
+              <div key={i} className={`ai-message ${msg.role} ${msg.error ? 'error' : ''}`}>
+                <div className="ai-message-content">
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="ai-message assistant">
+                <div className="ai-message-content ai-typing">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {messages.length > 0 && !loading && (
+            <div className="ai-quick-actions">
+              {QUICK_PROMPTS.slice(0, 2).map((item, i) => (
+                <button
+                  key={i}
+                  className="quick-action-btn"
+                  onClick={() => handleSend(item.prompt)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="ai-assistant-input">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your tasks..."
+              rows={1}
+              disabled={loading}
+            />
+            <button 
+              className="ai-send-btn"
+              onClick={() => handleSend()}
+              disabled={loading || !input.trim()}
+            >
+              ➤
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

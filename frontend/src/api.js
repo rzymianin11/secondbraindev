@@ -188,3 +188,9 @@ export const saveOcrTasks = (projectId, tasks, mode = 'merge') => request('/ocr/
   method: 'POST',
   body: JSON.stringify({ projectId, tasks, mode })
 });
+
+// AI Assistant
+export const askAssistant = (projectId, question) => request('/assistant/ask', {
+  method: 'POST',
+  body: JSON.stringify({ projectId, question })
+});
