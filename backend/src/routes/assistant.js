@@ -84,7 +84,7 @@ ${decisions.map(d => `- ${d.title}${d.reason ? `: ${d.reason}` : ''}`).join('\n'
     const client = getClient();
     
     const response = await client.chat.completions.create({
-      model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+      model: process.env.OPENAI_CHAT_MODEL || process.env.OPENAI_VISION_MODEL || 'gpt-4.1',
       messages: [
         {
           role: 'system',
