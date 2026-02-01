@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks, archiveProject } from '../api';
 
 const PRIORITY_CONFIG = {
   high: {
@@ -23,11 +24,13 @@ const PRIORITY_CONFIG = {
 };
 
 export default function PriorityList({ projectId, onTaskUpdate }) {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // pending, all, done
   const [cleaning, setCleaning] = useState(false);
   const [cleanupStats, setCleanupStats] = useState(null);
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -99,6 +102,22 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
     }
   }
 
+  async function handleArchiveProject() {
+    if (!confirm('Archive this project and start fresh?\n\nThis will:\n• Rename current project to [Archived]\n• Create a new empty project with the same name\n• Keep all archived data accessible')) return;
+    
+    setArchiving(true);
+    try {
+      const result = await archiveProject(projectId);
+      alert(`Archived! ${result.archived.tasks} tasks and ${result.archived.decisions} decisions saved.`);
+      navigate(`/project/${result.newProject.id}`);
+    } catch (err) {
+      console.error('Archive failed:', err);
+      alert('Failed to archive: ' + err.message);
+    } finally {
+      setArchiving(false);
+    }
+  }
+
   const groupedTasks = {
     high: tasks.filter(t => t.priority === 'high'),
     medium: tasks.filter(t => t.priority === 'medium'),
@@ -126,6 +145,14 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
             title="Remove duplicate tasks"
           >
             {cleaning ? '...' : '🧹 Clean duplicates'}
+          </button>
+          <button 
+            className="btn btn-small btn-archive"
+            onClick={handleArchiveProject}
+            disabled={archiving}
+            title="Archive and start fresh"
+          >
+            {archiving ? '...' : '📦 Archive & Fresh Start'}
           </button>
         </div>
         <div className="priority-filters">

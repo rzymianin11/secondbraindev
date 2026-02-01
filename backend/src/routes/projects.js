@@ -90,4 +90,40 @@ router.delete('/:id', (req, res) => {
   res.status(204).send();
 });
 
+// Archive project and create fresh copy
+router.post('/:id/archive', (req, res) => {
+  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
+  
+  if (!project) {
+    return res.status(404).json({ error: 'Project not found' });
+  }
+  
+  const now = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const archivedName = `[Archived ${now}] ${project.name}`;
+  
+  // Rename current project to archived
+  db.prepare('UPDATE projects SET name = ? WHERE id = ?').run(archivedName, req.params.id);
+  
+  // Create new fresh project with original name
+  const result = db.prepare(`
+    INSERT INTO projects (name, description) VALUES (?, ?)
+  `).run(project.name, project.description);
+  
+  const newProject = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
+  
+  // Count what was archived
+  const tasksCount = db.prepare('SELECT COUNT(*) as count FROM tasks WHERE projectId = ?').get(req.params.id);
+  const decisionsCount = db.prepare('SELECT COUNT(*) as count FROM decisions WHERE projectId = ?').get(req.params.id);
+  
+  res.json({
+    archived: {
+      id: req.params.id,
+      name: archivedName,
+      tasks: tasksCount.count,
+      decisions: decisionsCount.count
+    },
+    newProject
+  });
+});
+
 export default router;

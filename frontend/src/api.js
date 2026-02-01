@@ -200,6 +200,10 @@ export const bulkUpdateTasks = (taskIds, updates) => request('/tasks/bulk-update
   body: JSON.stringify({ taskIds, updates })
 });
 
+export const archiveProject = (projectId) => request(`/projects/${projectId}/archive`, {
+  method: 'POST'
+});
+
 // AI Assistant
 export const askAssistant = (projectId, question) => request('/assistant/ask', {
   method: 'POST',
