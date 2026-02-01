@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getProject, getDecisionsByProjectWithFilter, getRecordingsByProject, getTasksByProject } from '../api';
+import { getProject, getDecisionsByProjectWithFilter, getRecordingsByProject, getTasksByProject, getProjects } from '../api';
 import RecordingButton from './RecordingButton';
 import RecordingsList from './RecordingsList';
 import TasksList from './TasksList';
@@ -23,10 +23,24 @@ export default function ProjectDashboard() {
   const [activeTab, setActiveTab] = useState('decisions');
   const [selectedTag, setSelectedTag] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [currentProject, setCurrentProject] = useState(null);
+
+  const isArchived = project?.name?.startsWith('[Archived');
 
   useEffect(() => {
     loadData();
   }, [projectId, selectedTag]);
+
+  useEffect(() => {
+    // Find the current (non-archived) version of this project
+    if (isArchived && project) {
+      const baseName = project.name.replace(/^\[Archived \d{4}-\d{2}-\d{2}\] /, '');
+      getProjects().then(projects => {
+        const current = projects.find(p => p.name === baseName && !p.name.startsWith('[Archived'));
+        setCurrentProject(current);
+      });
+    }
+  }, [project, isArchived]);
 
   async function loadData() {
     try {
@@ -103,8 +117,22 @@ export default function ProjectDashboard() {
       <div className="breadcrumb">
         <Link to="/">Projects</Link>
         <span className="breadcrumb-separator">/</span>
-        <span>{project.name}</span>
+        <span>{isArchived ? project.name.replace(/^\[Archived \d{4}-\d{2}-\d{2}\] /, '') : project.name}</span>
+        {isArchived && <span className="breadcrumb-badge">📦 Archived</span>}
       </div>
+
+      {isArchived && (
+        <div className="archived-banner">
+          <span className="archived-banner-text">
+            📦 You're viewing an archived board from {project.name.match(/\d{4}-\d{2}-\d{2}/)?.[0]}
+          </span>
+          {currentProject && (
+            <Link to={`/project/${currentProject.id}`} className="btn btn-primary btn-small">
+              ← Back to Current Board
+            </Link>
+          )}
+        </div>
+      )}
 
       <div className="project-header">
         <div>

@@ -375,6 +375,44 @@ h3 {
   animation: slideIn 0.3s ease-out;
 }
 
+.breadcrumb-badge {
+  margin-left: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 12px;
+}
+
+.archived-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-lg);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.archived-banner-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .breadcrumb a {
   color: var(--text-secondary);
   text-decoration: none;
