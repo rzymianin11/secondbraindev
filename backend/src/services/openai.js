@@ -109,46 +109,52 @@ export async function analyzeImage(base64Image, mimeType, analysisType = 'conver
   }
 
   const prompts = {
-    conversation: `Analyze this image of a conversation (chat, messages, email, etc.).
+    conversation: `Analyze this image of a conversation or task list.
+
+IMPORTANT: Look at EACH line of text and check if it has a LINE DRAWN THROUGH IT (strikethrough).
+- Lines WITH a strikethrough = already done/completed
+- Lines WITHOUT any line through them = still pending/active
 
 Extract and return:
-1. extractedText: The full text content visible in the image, preserving the conversation structure
-2. summary: A brief summary of what the conversation is about and key points discussed
-3. tasks: Any action items, TODOs, or tasks mentioned or implied
-   - Set STATUS: "done" if crossed out/strikethrough, otherwise "pending"
-   - Set PRIORITY based on context:
-     * "high": urgent, critical, blocking, ASAP, important deadlines, bugs, security issues
-     * "medium": normal importance, standard work items
-     * "low": nice-to-have, someday, minor improvements, documentation
-
-Be thorough with text extraction - capture all visible text.`,
+1. extractedText: The full text content visible
+2. summary: Brief summary of the content
+3. tasks: Each item as a task with correct status:
+   - status: "done" if text has a LINE THROUGH IT
+   - status: "pending" if text is CLEAR (no line through it)
+   - priority: "high"/"medium"/"low" based on urgency`,
 
     document: `Analyze this document image.
 
-Extract and return:
-1. extractedText: All text content from the document
-2. summary: What this document is about and its key points
-3. tasks: Any action items or tasks mentioned
-   - Set STATUS: "done" if crossed out/strikethrough, otherwise "pending"
-   - Set PRIORITY: "high" for urgent/critical, "medium" for normal, "low" for nice-to-have`,
+IMPORTANT: Check each line for STRIKETHROUGH (line drawn through the text).
+- Strikethrough = done
+- No strikethrough = pending
+
+Extract:
+1. extractedText: All text from the document
+2. summary: What this document is about
+3. tasks: Items with status "done" (if crossed out) or "pending" (if clear)`,
 
     screenshot: `Analyze this screenshot.
 
-Extract and return:
-1. extractedText: All visible text in the screenshot
-2. summary: What this screenshot shows and its context
-3. tasks: Any relevant action items visible
-   - Set STATUS: "done" if crossed out/strikethrough, otherwise "pending"
-   - Set PRIORITY: "high" for urgent/critical, "medium" for normal, "low" for nice-to-have`,
+IMPORTANT: Check each task/item for STRIKETHROUGH.
+- Line through text = status: "done"  
+- Clear text = status: "pending"
 
-    whiteboard: `Analyze this whiteboard/diagram image.
+Extract:
+1. extractedText: All visible text
+2. summary: What this shows
+3. tasks: With correct done/pending status based on strikethrough`,
 
-Extract and return:
-1. extractedText: All text, labels, and annotations visible
-2. summary: What the whiteboard/diagram represents and its key concepts
-3. tasks: Any action items or TODOs noted
-   - Set STATUS: "done" if crossed out/strikethrough, otherwise "pending"
-   - Set PRIORITY: "high" for urgent/critical, "medium" for normal, "low" for nice-to-have`
+    whiteboard: `Analyze this whiteboard/diagram.
+
+IMPORTANT: Check for STRIKETHROUGH on each item.
+- Crossed out = done
+- Not crossed out = pending
+
+Extract:
+1. extractedText: All text and labels
+2. summary: What it represents
+3. tasks: With done/pending status based on visual strikethrough`
   };
 
   const visionModel = process.env.OPENAI_VISION_MODEL || 'gpt-4o';
@@ -158,7 +164,7 @@ Extract and return:
     messages: [
       {
         role: 'system',
-        content: `You are an OCR and image analysis assistant specialized in detecting task completion status.
+        content: `You are an OCR and image analysis assistant specialized in detecting task completion status from images.
 
 Always respond with valid JSON in this exact format:
 {
@@ -170,18 +176,18 @@ Always respond with valid JSON in this exact format:
   ]
 }
 
-CRITICAL - DETECTING COMPLETED/DONE TASKS:
-Look carefully for ANY visual indicators that a task is completed:
-- Line drawn through the text (strikethrough)
-- Text with a horizontal line crossing it
-- Checkmark ✓ or [x] or ☑ next to the item
-- Text labeled as "DONE", "COMPLETED", "FINISHED"
-- Crossed out with pen/marker
-- Faded or grayed out text indicating completion
-- Any visual indication the item is no longer active
+CRITICAL - STRIKETHROUGH DETECTION:
+Examine EACH line of text carefully. A strikethrough/crossed-out line has:
+- A horizontal line drawn THROUGH THE MIDDLE of the text
+- The line goes across the words, making them look "cancelled"
+- This is different from underline (which is BELOW the text)
 
-If you see ANY of these indicators → set status: "done"
-If text appears normal without completion markers → set status: "pending"
+For EACH task/item you extract:
+- If there is a LINE THROUGH THE TEXT → status: "done"
+- If the text is CLEAR with NO line through it → status: "pending"
+
+Most items in a todo list are typically crossed out (done). 
+Only items WITHOUT any line through them are still pending.
 
 PRIORITY assignment:
 - "high": urgent, critical, blocking, ASAP, bugs, security, deadlines
