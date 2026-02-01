@@ -66,13 +66,19 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     setResult(null);
 
     try {
+      console.log('Starting analysis...');
       const response = await analyzeImage(projectId, file, analysisType);
+      console.log('Response:', response);
+      console.log('Analysis:', response.analysis);
       setResult(response.analysis);
+      console.log('Result set!');
       
-      if (onAnalysisComplete) {
-        onAnalysisComplete(response.analysis);
-      }
+      // Don't call onAnalysisComplete - it might be causing re-render issues
+      // if (onAnalysisComplete) {
+      //   onAnalysisComplete(response.analysis);
+      // }
     } catch (err) {
+      console.error('Analysis error:', err);
       setError(err.message);
     } finally {
       setAnalyzing(false);
@@ -179,6 +185,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
             </div>
           )}
 
+          {result && console.log('Rendering result:', result)}
           {result && (
             <div className="analysis-result">
               <div className="result-success">✓ Analysis complete</div>
