@@ -84,6 +84,51 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(projectId);
   CREATE INDEX IF NOT EXISTS idx_tasks_recording ON tasks(recordingId);
   CREATE INDEX IF NOT EXISTS idx_tasks_decision ON tasks(decisionId);
+
+  -- Tags system
+  CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    projectId INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#667eea',
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
+    UNIQUE(projectId, name)
+  );
+
+  CREATE TABLE IF NOT EXISTS decision_tags (
+    decisionId INTEGER NOT NULL,
+    tagId INTEGER NOT NULL,
+    PRIMARY KEY (decisionId, tagId),
+    FOREIGN KEY (decisionId) REFERENCES decisions(id) ON DELETE CASCADE,
+    FOREIGN KEY (tagId) REFERENCES tags(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tags_project ON tags(projectId);
+  CREATE INDEX IF NOT EXISTS idx_decision_tags_decision ON decision_tags(decisionId);
+  CREATE INDEX IF NOT EXISTS idx_decision_tags_tag ON decision_tags(tagId);
+
+  -- Decision relations for graph
+  CREATE TABLE IF NOT EXISTS decision_relations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fromDecisionId INTEGER NOT NULL,
+    toDecisionId INTEGER NOT NULL,
+    relationType TEXT NOT NULL CHECK (relationType IN ('supersedes', 'relates', 'blocks', 'implements')),
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (fromDecisionId) REFERENCES decisions(id) ON DELETE CASCADE,
+    FOREIGN KEY (toDecisionId) REFERENCES decisions(id) ON DELETE CASCADE,
+    UNIQUE(fromDecisionId, toDecisionId)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_relations_from ON decision_relations(fromDecisionId);
+  CREATE INDEX IF NOT EXISTS idx_relations_to ON decision_relations(toDecisionId);
 `);
+
+// Add embedding column if not exists (for smart search)
+try {
+  db.exec(`ALTER TABLE decisions ADD COLUMN embedding BLOB`);
+} catch (e) {
+  // Column already exists
+}
 
 export default db;

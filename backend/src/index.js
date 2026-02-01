@@ -5,6 +5,9 @@ import projectsRouter from './routes/projects.js';
 import decisionsRouter from './routes/decisions.js';
 import recordingsRouter from './routes/recordings.js';
 import tasksRouter from './routes/tasks.js';
+import tagsRouter from './routes/tags.js';
+import relationsRouter from './routes/relations.js';
+import searchRouter from './routes/search.js';
 import { isOpenAIConfigured } from './services/openai.js';
 
 const app = express();
@@ -19,6 +22,9 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/decisions', decisionsRouter);
 app.use('/api/recordings', recordingsRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/tags', tagsRouter);
+app.use('/api/relations', relationsRouter);
+app.use('/api/search', searchRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

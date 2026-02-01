@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getProject, getDecisionsByProject, getRecordingsByProject, getTasksByProject } from '../api';
+import { getProject, getDecisionsByProjectWithFilter, getRecordingsByProject, getTasksByProject } from '../api';
 import RecordingButton from './RecordingButton';
 import RecordingsList from './RecordingsList';
 import TasksList from './TasksList';
+import TagFilter from './TagFilter';
+import TagBadge from './TagBadge';
+import SearchBar from './SearchBar';
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -14,17 +17,18 @@ export default function ProjectDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('decisions');
+  const [selectedTag, setSelectedTag] = useState(null);
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [projectId, selectedTag]);
 
   async function loadData() {
     try {
       setLoading(true);
       const [projectData, decisionsData, recordingsData, tasksData] = await Promise.all([
         getProject(projectId),
-        getDecisionsByProject(projectId),
+        getDecisionsByProjectWithFilter(projectId, selectedTag),
         getRecordingsByProject(projectId),
         getTasksByProject(projectId)
       ]);
@@ -41,7 +45,11 @@ export default function ProjectDashboard() {
   }
 
   function handleRecordingComplete(recording) {
-    loadData(); // Reload all data
+    loadData();
+  }
+
+  function handleTagSelect(tag) {
+    setSelectedTag(tag);
   }
 
   function formatDate(dateString) {
@@ -97,6 +105,10 @@ export default function ProjectDashboard() {
           )}
         </div>
         <div className="project-actions">
+          <SearchBar projectId={Number(projectId)} />
+          <Link to={`/project/${projectId}/graph`} className="btn" title="View Decision Graph">
+            Graph
+          </Link>
           <RecordingButton 
             projectId={Number(projectId)} 
             onRecordingComplete={handleRecordingComplete}
@@ -130,9 +142,15 @@ export default function ProjectDashboard() {
 
       {activeTab === 'decisions' && (
         <section className="timeline-section">
+          <TagFilter 
+            projectId={Number(projectId)}
+            selectedTag={selectedTag}
+            onTagSelect={handleTagSelect}
+          />
+          
           {decisions.length === 0 ? (
             <div className="empty-state">
-              <p>No decisions recorded yet.</p>
+              <p>{selectedTag ? `No decisions with tag "${selectedTag}".` : 'No decisions recorded yet.'}</p>
               <p>Document your first technical decision to build your project's memory.</p>
             </div>
           ) : (
@@ -147,6 +165,13 @@ export default function ProjectDashboard() {
                         <span className="timeline-time">{formatTime(decision.createdAt)}</span>
                       </div>
                       <h3 className="timeline-title">{decision.title}</h3>
+                      {decision.tags && decision.tags.length > 0 && (
+                        <div className="decision-tags">
+                          {decision.tags.map(tag => (
+                            <TagBadge key={tag.id} tag={tag} size="small" />
+                          ))}
+                        </div>
+                      )}
                       {decision.description && (
                         <p className="timeline-description">
                           {decision.description.length > 150 

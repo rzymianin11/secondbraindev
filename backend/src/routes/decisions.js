@@ -3,17 +3,49 @@ import db from '../db.js';
 
 const router = Router();
 
+// Helper to get tags for a decision
+function getDecisionTags(decisionId) {
+  return db.prepare(`
+    SELECT t.id, t.name, t.color
+    FROM tags t
+    JOIN decision_tags dt ON t.id = dt.tagId
+    WHERE dt.decisionId = ?
+  `).all(decisionId);
+}
+
 // List decisions by project (ordered by createdAt desc)
 router.get('/project/:projectId', (req, res) => {
-  const decisions = db.prepare(`
-    SELECT * FROM decisions 
-    WHERE projectId = ? 
-    ORDER BY createdAt DESC
-  `).all(req.params.projectId);
-  res.json(decisions);
+  const { tag } = req.query;
+  
+  let decisions;
+  
+  if (tag) {
+    // Filter by tag
+    decisions = db.prepare(`
+      SELECT DISTINCT d.* FROM decisions d
+      JOIN decision_tags dt ON d.id = dt.decisionId
+      JOIN tags t ON dt.tagId = t.id
+      WHERE d.projectId = ? AND t.name = ?
+      ORDER BY d.createdAt DESC
+    `).all(req.params.projectId, tag.toLowerCase());
+  } else {
+    decisions = db.prepare(`
+      SELECT * FROM decisions 
+      WHERE projectId = ? 
+      ORDER BY createdAt DESC
+    `).all(req.params.projectId);
+  }
+  
+  // Add tags to each decision
+  const decisionsWithTags = decisions.map(d => ({
+    ...d,
+    tags: getDecisionTags(d.id)
+  }));
+  
+  res.json(decisionsWithTags);
 });
 
-// Get single decision with its links
+// Get single decision with its links and tags
 router.get('/:id', (req, res) => {
   const decision = db.prepare(`
     SELECT * FROM decisions WHERE id = ?
@@ -27,7 +59,29 @@ router.get('/:id', (req, res) => {
     SELECT * FROM links WHERE decisionId = ?
   `).all(req.params.id);
   
-  res.json({ ...decision, links });
+  const tags = getDecisionTags(req.params.id);
+  
+  // Get relations
+  const relationsOut = db.prepare(`
+    SELECT r.*, d.title as toTitle
+    FROM decision_relations r
+    JOIN decisions d ON r.toDecisionId = d.id
+    WHERE r.fromDecisionId = ?
+  `).all(req.params.id);
+  
+  const relationsIn = db.prepare(`
+    SELECT r.*, d.title as fromTitle
+    FROM decision_relations r
+    JOIN decisions d ON r.fromDecisionId = d.id
+    WHERE r.toDecisionId = ?
+  `).all(req.params.id);
+  
+  res.json({ 
+    ...decision, 
+    links, 
+    tags,
+    relations: { outgoing: relationsOut, incoming: relationsIn }
+  });
 });
 
 // Create decision for a project

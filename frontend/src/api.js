@@ -108,3 +108,51 @@ export const bulkUpdateTasks = (ids, updates) => request('/tasks/bulk/update', {
   method: 'PATCH',
   body: JSON.stringify({ ids, ...updates })
 });
+
+// Tags
+export const getTagsByProject = (projectId) => request(`/tags/project/${projectId}`);
+export const createTag = (data) => request('/tags', {
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+export const updateTag = (id, data) => request(`/tags/${id}`, {
+  method: 'PATCH',
+  body: JSON.stringify(data)
+});
+export const deleteTag = (id) => request(`/tags/${id}`, {
+  method: 'DELETE'
+});
+export const addTagToDecision = (decisionId, data) => request(`/tags/decision/${decisionId}`, {
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+export const removeTagFromDecision = (decisionId, tagId) => request(`/tags/decision/${decisionId}/tag/${tagId}`, {
+  method: 'DELETE'
+});
+export const getDecisionTags = (decisionId) => request(`/tags/decision/${decisionId}`);
+export const getPredefinedColors = () => request('/tags/colors/predefined');
+
+// Relations
+export const getRelationsByProject = (projectId) => request(`/relations/project/${projectId}`);
+export const getRelationsByDecision = (decisionId) => request(`/relations/decision/${decisionId}`);
+export const createRelation = (data) => request('/relations', {
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+export const deleteRelation = (id) => request(`/relations/${id}`, {
+  method: 'DELETE'
+});
+export const getGraphData = (projectId) => request(`/relations/graph/${projectId}`);
+export const getRelationTypes = () => request('/relations/types');
+
+// Decisions with filters
+export const getDecisionsByProjectWithFilter = (projectId, tag) => {
+  const query = tag ? `?tag=${encodeURIComponent(tag)}` : '';
+  return request(`/decisions/project/${projectId}${query}`);
+};
+
+// Search
+export const searchProject = (projectId, query) => request('/search', {
+  method: 'POST',
+  body: JSON.stringify({ projectId, query })
+});
