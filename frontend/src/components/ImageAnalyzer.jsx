@@ -13,6 +13,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisType, setAnalysisType] = useState('conversation');
   const [preview, setPreview] = useState(null);
+  const [currentFile, setCurrentFile] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
@@ -45,6 +46,9 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   }
 
   function handleFile(file) {
+    // Store file for retry
+    setCurrentFile(file);
+    
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -77,10 +81,17 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
 
   function handleReset() {
     setPreview(null);
+    setCurrentFile(null);
     setResult(null);
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  }
+
+  function handleRetry() {
+    if (currentFile) {
+      analyzeFile(currentFile);
     }
   }
 
@@ -162,7 +173,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
           {error && (
             <div className="analyzer-error">
               <p>{error}</p>
-              <button className="btn btn-small" onClick={() => analyzeFile(preview)}>
+              <button className="btn btn-small" onClick={handleRetry}>
                 Retry
               </button>
             </div>
