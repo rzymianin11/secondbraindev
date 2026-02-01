@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { analyzeImage, getImageAnalyses } from '../api';
+import { analyzeImage, getImageAnalyses, saveOcrTasks } from '../api';
 
 const ANALYSIS_TYPES = [
   { value: 'conversation', label: 'Conversation / Chat', icon: '💬' },
@@ -18,6 +18,9 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(true);
+  const [tasksSaved, setTasksSaved] = useState(false);
+  const [saveStats, setSaveStats] = useState(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -106,9 +109,29 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     setResult(null);
     setError(null);
     setShowHistory(true);
+    setTasksSaved(false);
+    setSaveStats(null);
     loadHistory(); // Refresh history
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleSaveTasks(mode) {
+    if (!result?.tasks || result.tasks.length === 0) return;
+    
+    setSaving(true);
+    try {
+      const response = await saveOcrTasks(projectId, result.tasks, mode);
+      setSaveStats(response.stats);
+      setTasksSaved(true);
+      if (onAnalysisComplete) {
+        onAnalysisComplete();
+      }
+    } catch (err) {
+      setError('Failed to save tasks: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -295,17 +318,31 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                       );
                     })}
                   </ul>
-                  <p className="tasks-note">
-                    {result.taskStats ? (
-                      <>
-                        {result.taskStats.created > 0 && `${result.taskStats.created} new task(s) created. `}
-                        {result.taskStats.updated > 0 && `${result.taskStats.updated} task(s) updated. `}
-                        {result.taskStats.created === 0 && result.taskStats.updated === 0 && 'All tasks already exist in your project.'}
-                      </>
-                    ) : (
-                      'Tasks have been automatically added to your project.'
-                    )}
-                  </p>
+                  
+                  {!tasksSaved ? (
+                    <div className="tasks-actions">
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => handleSaveTasks('merge')}
+                        disabled={saving}
+                      >
+                        {saving ? 'Saving...' : 'Merge with Existing'}
+                      </button>
+                      <button 
+                        className="btn"
+                        onClick={() => handleSaveTasks('create_new')}
+                        disabled={saving}
+                      >
+                        Create All as New
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="tasks-note tasks-saved">
+                      ✓ {saveStats?.created > 0 && `${saveStats.created} task(s) created. `}
+                      {saveStats?.updated > 0 && `${saveStats.updated} task(s) updated. `}
+                      {saveStats?.skipped > 0 && `${saveStats.skipped} already existed. `}
+                    </p>
+                  )}
                 </div>
               ) : null}
 

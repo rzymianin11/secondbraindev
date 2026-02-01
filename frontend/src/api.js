@@ -184,3 +184,7 @@ export async function analyzeImage(projectId, imageFile, analysisType = 'convers
 export const getImageAnalyses = (projectId) => request(`/ocr/project/${projectId}`);
 export const getImageAnalysis = (id) => request(`/ocr/${id}`);
 export const deleteImageAnalysis = (id) => request(`/ocr/${id}`, { method: 'DELETE' });
+export const saveOcrTasks = (projectId, tasks, mode = 'merge') => request('/ocr/save-tasks', {
+  method: 'POST',
+  body: JSON.stringify({ projectId, tasks, mode })
+});
