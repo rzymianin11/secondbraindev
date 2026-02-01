@@ -181,21 +181,23 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
 
           {result && (
             <div className="analysis-result">
-              {result.summary && (
+              <div className="result-success">✓ Analysis complete</div>
+              
+              {result.summary ? (
                 <div className="result-section">
                   <h4>Summary</h4>
                   <p className="result-summary">{result.summary}</p>
                 </div>
-              )}
+              ) : null}
 
-              {result.extractedText && (
+              {result.extractedText ? (
                 <div className="result-section">
                   <h4>Extracted Text</h4>
                   <pre className="result-text">{result.extractedText}</pre>
                 </div>
-              )}
+              ) : null}
 
-              {result.tasks && result.tasks.length > 0 && (
+              {result.tasks && result.tasks.length > 0 ? (
                 <div className="result-section">
                   <h4>Extracted Tasks ({result.tasks.length})</h4>
                   <ul className="result-tasks">
@@ -207,6 +209,13 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                     ))}
                   </ul>
                   <p className="tasks-note">Tasks have been automatically added to your project.</p>
+                </div>
+              ) : null}
+
+              {!result.summary && !result.extractedText && (!result.tasks || result.tasks.length === 0) && (
+                <div className="result-section">
+                  <p className="result-empty">No text or tasks extracted from this image.</p>
+                  <pre className="result-raw">{JSON.stringify(result, null, 2)}</pre>
                 </div>
               )}
             </div>
