@@ -172,10 +172,46 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
         </div>
       </div>
 
-      {!preview && showHistory ? (
+      {/* History thumbnails - always visible when no preview */}
+      {!preview && history.length > 0 && (
+        <div className="image-history-thumbnails">
+          {history.slice(0, 8).map(item => (
+            <button
+              key={item.id}
+              className="history-thumbnail"
+              onClick={() => viewHistoryItem(item)}
+              title={item.summary || 'View analysis'}
+            >
+              <img 
+                src={`/api/ocr/image/${item.filename}`} 
+                alt="Previous analysis"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="thumbnail-fallback" style={{ display: 'none' }}>
+                {ANALYSIS_TYPES.find(t => t.value === item.analysisType)?.icon || '📷'}
+              </div>
+              {item.tasks && item.tasks.length > 0 && (
+                <span className="thumbnail-badge">{item.tasks.length}</span>
+              )}
+            </button>
+          ))}
+          <button
+            className="history-thumbnail add-new"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload new image"
+          >
+            <span>+</span>
+          </button>
+        </div>
+      )}
+
+      {!preview ? (
         <>
           <div
-            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+            className={`drop-zone ${isDragging ? 'dragging' : ''} ${history.length > 0 ? 'compact' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -198,36 +234,8 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
               </p>
             </div>
           </div>
-
-          {history.length > 0 && (
-            <div className="image-history">
-              <h4>Recent Analyses</h4>
-              <div className="history-grid">
-                {history.slice(0, 6).map(item => (
-                  <button
-                    key={item.id}
-                    className="history-item"
-                    onClick={() => viewHistoryItem(item)}
-                  >
-                    <div className="history-item-icon">
-                      {ANALYSIS_TYPES.find(t => t.value === item.analysisType)?.icon || '📷'}
-                    </div>
-                    <div className="history-item-info">
-                      <span className="history-item-date">{formatDate(item.createdAt)}</span>
-                      <span className="history-item-summary">
-                        {item.summary ? item.summary.slice(0, 50) + (item.summary.length > 50 ? '...' : '') : 'No summary'}
-                      </span>
-                      {item.tasks && item.tasks.length > 0 && (
-                        <span className="history-item-tasks">{item.tasks.length} tasks</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </>
-      ) : preview ? (
+      ) : (
         <div className="analyzer-content">
           <div className="preview-section">
             <img src={preview} alt="Preview" className="image-preview" />
