@@ -1,6 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
 import { askAssistant } from '../api';
 
+// Simple markdown formatter for AI responses
+function formatMessage(text) {
+  if (!text) return '';
+  
+  return text
+    // Headers
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Bullet points with dash
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    // Line breaks (but not inside tags)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br/>');
+}
+
 const QUICK_PROMPTS = [
   { label: 'What should I do first?', prompt: 'What task should I focus on first and why?' },
   { label: 'Summarize my tasks', prompt: 'Give me a quick summary of all my pending tasks' },
@@ -107,9 +128,16 @@ export default function AIAssistant({ projectId, projectName }) {
 
             {messages.map((msg, i) => (
               <div key={i} className={`ai-message ${msg.role} ${msg.error ? 'error' : ''}`}>
-                <div className="ai-message-content">
-                  {msg.content}
-                </div>
+                {msg.role === 'assistant' ? (
+                  <div 
+                    className="ai-message-content formatted"
+                    dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                  />
+                ) : (
+                  <div className="ai-message-content">
+                    {msg.content}
+                  </div>
+                )}
               </div>
             ))}
 

@@ -2780,6 +2780,61 @@ h3 {
   border-bottom-left-radius: 4px;
 }
 
+.ai-message-content.formatted {
+  white-space: normal;
+}
+
+.ai-message-content.formatted h3,
+.ai-message-content.formatted h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin: 12px 0 8px 0;
+}
+
+.ai-message-content.formatted h3:first-child,
+.ai-message-content.formatted h4:first-child {
+  margin-top: 0;
+}
+
+.ai-message-content.formatted strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ai-message-content.formatted ul {
+  margin: 8px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.ai-message-content.formatted li {
+  position: relative;
+  padding-left: 16px;
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.ai-message-content.formatted li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+.ai-message-content.formatted p {
+  margin: 8px 0;
+}
+
+.ai-message-content.formatted p:first-child {
+  margin-top: 0;
+}
+
+.ai-message-content.formatted p:last-child {
+  margin-bottom: 0;
+}
+
 .ai-message.error .ai-message-content {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
