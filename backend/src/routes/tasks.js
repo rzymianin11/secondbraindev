@@ -20,7 +20,7 @@ router.get('/project/:projectId', (req, res) => {
     params.push(priority);
   }
   
-  query += ' ORDER BY CASE priority WHEN "high" THEN 1 WHEN "medium" THEN 2 WHEN "low" THEN 3 END, createdAt DESC';
+  query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, createdAt DESC";
   
   const tasks = db.prepare(query).all(...params);
   res.json(tasks);
