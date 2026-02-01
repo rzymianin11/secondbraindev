@@ -189,6 +189,11 @@ export const saveOcrTasks = (projectId, tasks, mode = 'merge') => request('/ocr/
   body: JSON.stringify({ projectId, tasks, mode })
 });
 
+export const reanalyzeImage = (projectId, filename, analysisType = 'conversation') => request('/ocr/reanalyze', {
+  method: 'POST',
+  body: JSON.stringify({ projectId, filename, analysisType })
+});
+
 // AI Assistant
 export const askAssistant = (projectId, question) => request('/assistant/ask', {
   method: 'POST',

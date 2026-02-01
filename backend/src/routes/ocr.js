@@ -188,6 +188,78 @@ router.post('/save-tasks', (req, res) => {
   });
 });
 
+// Re-analyze existing image
+router.post('/reanalyze', async (req, res) => {
+  if (!isOpenAIConfigured()) {
+    return res.status(503).json({ error: 'OpenAI API key not configured' });
+  }
+
+  const { projectId, filename, analysisType = 'conversation' } = req.body;
+
+  if (!filename) {
+    return res.status(400).json({ error: 'Filename is required' });
+  }
+
+  const imagePath = path.join(uploadsDir, 'images', filename);
+  
+  if (!fs.existsSync(imagePath)) {
+    return res.status(404).json({ error: 'Image not found' });
+  }
+
+  try {
+    // Read image as base64
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+    
+    // Determine MIME type from extension
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp'
+    };
+    const mimeType = mimeTypes[ext] || 'image/jpeg';
+
+    // Analyze with GPT-4 Vision
+    const analysis = await analyzeImage(base64Image, mimeType, analysisType);
+
+    // Update the database record if projectId provided
+    if (projectId) {
+      const existingAnalysis = db.prepare(
+        'SELECT id FROM image_analyses WHERE projectId = ? AND filename = ?'
+      ).get(projectId, filename);
+
+      if (existingAnalysis) {
+        db.prepare(`
+          UPDATE image_analyses 
+          SET analysisType = ?, extractedText = ?, summary = ?, tasks = ?, createdAt = datetime('now')
+          WHERE id = ?
+        `).run(
+          analysisType,
+          analysis.extractedText || null,
+          analysis.summary || null,
+          analysis.tasks ? JSON.stringify(analysis.tasks) : null,
+          existingAnalysis.id
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      analysis: {
+        ...analysis,
+        filename
+      }
+    });
+
+  } catch (err) {
+    console.error('Re-analysis error:', err);
+    res.status(500).json({ error: 'Re-analysis failed: ' + err.message });
+  }
+});
+
 // Serve image file
 router.get('/image/:filename', (req, res) => {
   const imagePath = path.join(uploadsDir, 'images', req.params.filename);

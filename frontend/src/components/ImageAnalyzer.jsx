@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { analyzeImage, getImageAnalyses, saveOcrTasks } from '../api';
+import { analyzeImage, getImageAnalyses, saveOcrTasks, reanalyzeImage } from '../api';
 
 const ANALYSIS_TYPES = [
   { value: 'conversation', label: 'Conversation / Chat', icon: '💬' },
@@ -21,6 +21,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   const [tasksSaved, setTasksSaved] = useState(false);
   const [saveStats, setSaveStats] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [historyFilename, setHistoryFilename] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -111,6 +112,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     setShowHistory(true);
     setTasksSaved(false);
     setSaveStats(null);
+    setHistoryFilename(null);
     loadHistory(); // Refresh history
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -144,12 +146,35 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   function viewHistoryItem(item) {
     setShowHistory(false);
     setPreview(`/api/ocr/image/${item.filename}`);
+    setHistoryFilename(item.filename);
     setResult({
       extractedText: item.extractedText,
       summary: item.summary,
       tasks: item.tasks || []
     });
     setError(null);
+    setTasksSaved(false);
+    setSaveStats(null);
+  }
+
+  async function handleReanalyze() {
+    if (!historyFilename) return;
+    
+    setAnalyzing(true);
+    setError(null);
+    setResult(null);
+    setTasksSaved(false);
+    setSaveStats(null);
+
+    try {
+      const response = await reanalyzeImage(projectId, historyFilename, analysisType);
+      setResult(response.analysis);
+    } catch (err) {
+      console.error('Re-analysis error:', err);
+      setError(err.message);
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   function formatDate(dateString) {
@@ -262,9 +287,16 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
         <div className="analyzer-content">
           <div className="preview-section">
             <img src={preview} alt="Preview" className="image-preview" />
-            <button className="btn btn-small" onClick={handleReset}>
-              New Image
-            </button>
+            <div className="preview-actions">
+              <button className="btn btn-small" onClick={handleReset}>
+                New Image
+              </button>
+              {historyFilename && !analyzing && (
+                <button className="btn btn-small btn-primary" onClick={handleReanalyze}>
+                  🔄 Re-analyze
+                </button>
+              )}
+            </div>
           </div>
 
           {analyzing && (
