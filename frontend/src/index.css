@@ -806,13 +806,32 @@ h3 {
    ============================================ */
 .decision-view,
 .recording-view {
+  /* Extend beyond parent's max-width to cover full viewport */
+  position: relative;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-left: 0;
+  margin-right: 0;
+  padding: 40px 24px;
+  min-height: calc(100vh - 80px);
   cursor: pointer;
-  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .decision-view .breadcrumb,
 .recording-view .breadcrumb {
   cursor: default;
+  width: 100%;
+  max-width: 900px;
+}
+
+.decision-view .error-message,
+.recording-view .error-message {
+  max-width: 900px;
+  width: 100%;
 }
 
 .decision-article,
@@ -825,6 +844,8 @@ h3 {
   padding: 36px;
   animation: slideUp 0.4s ease-out;
   cursor: default;
+  width: 100%;
+  max-width: 900px;
 }
 
 .decision-header,
