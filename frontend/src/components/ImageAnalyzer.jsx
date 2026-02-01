@@ -22,15 +22,16 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   const [saveStats, setSaveStats] = useState(null);
   const [saving, setSaving] = useState(false);
   const [historyFilename, setHistoryFilename] = useState(null);
+  const [showAllProjects, setShowAllProjects] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadHistory();
-  }, [projectId]);
+  }, [projectId, showAllProjects]);
 
   async function loadHistory() {
     try {
-      const analyses = await getImageAnalyses(projectId);
+      const analyses = await getImageAnalyses(projectId, showAllProjects);
       setHistory(analyses);
     } catch (err) {
       console.error('Failed to load history:', err);
@@ -221,6 +222,22 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
       </div>
 
       {/* History thumbnails - always visible when no preview */}
+      {!preview && (
+        <div className="history-toggle">
+          <button 
+            className={`toggle-btn ${!showAllProjects ? 'active' : ''}`}
+            onClick={() => setShowAllProjects(false)}
+          >
+            This Project
+          </button>
+          <button 
+            className={`toggle-btn ${showAllProjects ? 'active' : ''}`}
+            onClick={() => setShowAllProjects(true)}
+          >
+            All Projects
+          </button>
+        </div>
+      )}
       {!preview && history.length > 0 && (
         <div className="image-history-thumbnails">
           {history.slice(0, 8).map(item => (

@@ -100,18 +100,69 @@ router.post('/analyze', upload.single('image'), async (req, res) => {
   }
 });
 
-// Get analysis history for a project
+// Get analysis history for a project (with option to include all projects)
 router.get('/project/:projectId', (req, res) => {
-  const analyses = db.prepare(`
-    SELECT * FROM image_analyses 
-    WHERE projectId = ? 
-    ORDER BY createdAt DESC
-  `).all(req.params.projectId);
+  const { includeAll } = req.query;
+  
+  let analyses;
+  if (includeAll === 'true') {
+    // Get unique images from all projects (by filename)
+    analyses = db.prepare(`
+      SELECT * FROM image_analyses 
+      GROUP BY filename
+      ORDER BY createdAt DESC
+    `).all();
+  } else {
+    analyses = db.prepare(`
+      SELECT * FROM image_analyses 
+      WHERE projectId = ? 
+      ORDER BY createdAt DESC
+    `).all(req.params.projectId);
+  }
   
   res.json(analyses.map(a => ({
     ...a,
     tasks: a.tasks ? JSON.parse(a.tasks) : []
   })));
+});
+
+// Copy image history from one project to another
+router.post('/copy-history', (req, res) => {
+  const { fromProjectId, toProjectId } = req.body;
+  
+  if (!fromProjectId || !toProjectId) {
+    return res.status(400).json({ error: 'fromProjectId and toProjectId required' });
+  }
+  
+  const analyses = db.prepare('SELECT * FROM image_analyses WHERE projectId = ?').all(fromProjectId);
+  
+  const copyAnalysis = db.prepare(`
+    INSERT INTO image_analyses (projectId, filename, analysisType, extractedText, summary, tasks, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  let copied = 0;
+  for (const analysis of analyses) {
+    // Check if already exists in target
+    const exists = db.prepare(
+      'SELECT id FROM image_analyses WHERE projectId = ? AND filename = ?'
+    ).get(toProjectId, analysis.filename);
+    
+    if (!exists) {
+      copyAnalysis.run(
+        toProjectId,
+        analysis.filename,
+        analysis.analysisType,
+        analysis.extractedText,
+        analysis.summary,
+        analysis.tasks,
+        analysis.createdAt
+      );
+      copied++;
+    }
+  }
+  
+  res.json({ copied, total: analyses.length });
 });
 
 // Get single analysis

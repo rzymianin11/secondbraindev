@@ -111,6 +111,25 @@ router.post('/:id/archive', (req, res) => {
   
   const newProject = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
   
+  // Copy image analyses to new project (so history is preserved)
+  const imageAnalyses = db.prepare('SELECT * FROM image_analyses WHERE projectId = ?').all(req.params.id);
+  const copyAnalysis = db.prepare(`
+    INSERT INTO image_analyses (projectId, filename, analysisType, extractedText, summary, tasks, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  for (const analysis of imageAnalyses) {
+    copyAnalysis.run(
+      newProject.id,
+      analysis.filename,
+      analysis.analysisType,
+      analysis.extractedText,
+      analysis.summary,
+      analysis.tasks,
+      analysis.createdAt
+    );
+  }
+  
   // Count what was archived
   const tasksCount = db.prepare('SELECT COUNT(*) as count FROM tasks WHERE projectId = ?').get(req.params.id);
   const decisionsCount = db.prepare('SELECT COUNT(*) as count FROM decisions WHERE projectId = ?').get(req.params.id);
@@ -122,7 +141,8 @@ router.post('/:id/archive', (req, res) => {
       tasks: tasksCount.count,
       decisions: decisionsCount.count
     },
-    newProject
+    newProject,
+    imagesCopied: imageAnalyses.length
   });
 });
 
