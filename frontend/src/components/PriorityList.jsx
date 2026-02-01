@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks, archiveProject } from '../api';
+import { useNavigate, Link } from 'react-router-dom';
+import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks, archiveProject, getProjects } from '../api';
 
 const PRIORITY_CONFIG = {
   high: {
@@ -31,10 +31,22 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   const [cleaning, setCleaning] = useState(false);
   const [cleanupStats, setCleanupStats] = useState(null);
   const [archiving, setArchiving] = useState(false);
+  const [archivedProjects, setArchivedProjects] = useState([]);
 
   useEffect(() => {
     loadTasks();
+    loadArchivedProjects();
   }, [projectId, filter]);
+
+  async function loadArchivedProjects() {
+    try {
+      const projects = await getProjects();
+      const archived = projects.filter(p => p.name.startsWith('[Archived'));
+      setArchivedProjects(archived);
+    } catch (err) {
+      console.error('Failed to load archived projects:', err);
+    }
+  }
 
   async function loadTasks() {
     try {
@@ -242,6 +254,30 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
       {tasks.length === 0 && (
         <div className="priority-empty">
           <p>No tasks {filter === 'done' ? 'completed' : 'to do'} yet.</p>
+        </div>
+      )}
+
+      {archivedProjects.length > 0 && (
+        <div className="archived-section">
+          <div className="archived-section-header">
+            <span className="archived-icon">📦</span>
+            <h3>Saved Boards</h3>
+            <span className="archived-count">{archivedProjects.length}</span>
+          </div>
+          <ul className="archived-list">
+            {archivedProjects.map(project => {
+              const dateMatch = project.name.match(/\d{4}-\d{2}-\d{2}/);
+              const cleanName = project.name.replace(/^\[Archived \d{4}-\d{2}-\d{2}\] /, '');
+              return (
+                <li key={project.id} className="archived-item">
+                  <Link to={`/project/${project.id}`} className="archived-link">
+                    <span className="archived-name">{cleanName}</span>
+                    <span className="archived-date">{dateMatch?.[0] || ''}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </div>
