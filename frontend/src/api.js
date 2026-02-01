@@ -108,10 +108,6 @@ export const updateTask = (id, data) => request(`/tasks/${id}`, {
 export const deleteTask = (id) => request(`/tasks/${id}`, {
   method: 'DELETE'
 });
-export const bulkUpdateTasks = (ids, updates) => request('/tasks/bulk/update', {
-  method: 'PATCH',
-  body: JSON.stringify({ ids, ...updates })
-});
 
 // Tags
 export const getTagsByProject = (projectId) => request(`/tags/project/${projectId}`);
