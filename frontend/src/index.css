@@ -804,6 +804,17 @@ h3 {
 /* ============================================
    DECISION VIEW
    ============================================ */
+.decision-view,
+.recording-view {
+  cursor: pointer;
+  min-height: calc(100vh - 200px);
+}
+
+.decision-view .breadcrumb,
+.recording-view .breadcrumb {
+  cursor: default;
+}
+
 .decision-article,
 .recording-article {
   background: var(--glass-bg);
@@ -813,6 +824,7 @@ h3 {
   border-radius: var(--radius-xl);
   padding: 36px;
   animation: slideUp 0.4s ease-out;
+  cursor: default;
 }
 
 .decision-header,

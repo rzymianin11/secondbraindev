@@ -121,8 +121,15 @@ export default function DecisionView() {
     );
   }
 
+  function handleBackgroundClick(e) {
+    // Only navigate back if clicking directly on the background
+    if (e.target === e.currentTarget) {
+      navigate(`/project/${decision.projectId}`);
+    }
+  }
+
   return (
-    <div className="decision-view">
+    <div className="decision-view" onClick={handleBackgroundClick}>
       <div className="breadcrumb">
         <Link to="/">Projects</Link>
         <span className="breadcrumb-separator">/</span>
@@ -133,7 +140,7 @@ export default function DecisionView() {
 
       {error && <div className="error-message">{error}</div>}
 
-      <article className="decision-article">
+      <article className="decision-article" onClick={(e) => e.stopPropagation()}>
         <header className="decision-header">
           <h1>{decision.title}</h1>
           <time className="decision-time">{formatDateTime(decision.createdAt)}</time>
