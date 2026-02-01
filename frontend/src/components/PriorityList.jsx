@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTasksByProject, updateTask } from '../api';
+import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks } from '../api';
 
 const PRIORITY_CONFIG = {
   high: {
@@ -26,6 +26,8 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // pending, all, done
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanupStats, setCleanupStats] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -64,6 +66,39 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
     }
   }
 
+  async function handleCleanupDuplicates() {
+    if (!confirm('This will remove duplicate tasks (keeping the oldest one). Continue?')) return;
+    
+    setCleaning(true);
+    try {
+      const result = await cleanupDuplicateTasks(projectId);
+      setCleanupStats(result);
+      loadTasks();
+      if (onTaskUpdate) onTaskUpdate();
+      setTimeout(() => setCleanupStats(null), 5000);
+    } catch (err) {
+      console.error('Cleanup failed:', err);
+      alert('Failed to cleanup: ' + err.message);
+    } finally {
+      setCleaning(false);
+    }
+  }
+
+  async function handleMarkAllDone(priority) {
+    const tasksToMark = groupedTasks[priority].filter(t => t.status !== 'done');
+    if (tasksToMark.length === 0) return;
+    
+    if (!confirm(`Mark ${tasksToMark.length} ${priority} priority tasks as done?`)) return;
+    
+    try {
+      await bulkUpdateTasks(tasksToMark.map(t => t.id), { status: 'done' });
+      loadTasks();
+      if (onTaskUpdate) onTaskUpdate();
+    } catch (err) {
+      console.error('Bulk update failed:', err);
+    }
+  }
+
   const groupedTasks = {
     high: tasks.filter(t => t.priority === 'high'),
     medium: tasks.filter(t => t.priority === 'medium'),
@@ -82,6 +117,16 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
         <div className="priority-summary">
           <span className="priority-count">{totalPending}</span>
           <span className="priority-label">tasks to do</span>
+        </div>
+        <div className="priority-actions">
+          <button 
+            className="btn btn-small btn-cleanup"
+            onClick={handleCleanupDuplicates}
+            disabled={cleaning}
+            title="Remove duplicate tasks"
+          >
+            {cleaning ? '...' : '🧹 Clean duplicates'}
+          </button>
         </div>
         <div className="priority-filters">
           <button 
@@ -105,6 +150,12 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
         </div>
       </div>
 
+      {cleanupStats && (
+        <div className="cleanup-stats">
+          ✓ Cleaned up: {cleanupStats.deleted} duplicate(s) removed, {cleanupStats.remaining} tasks remain
+        </div>
+      )}
+
       {['high', 'medium', 'low'].map(priority => {
         const config = PRIORITY_CONFIG[priority];
         const priorityTasks = groupedTasks[priority];
@@ -119,6 +170,15 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
                 <h3>{config.label}</h3>
                 <p>{config.description}</p>
               </div>
+              {filter !== 'done' && priorityTasks.some(t => t.status !== 'done') && (
+                <button 
+                  className="btn-mark-all-done"
+                  onClick={() => handleMarkAllDone(priority)}
+                  title="Mark all as done"
+                >
+                  ✓ All done
+                </button>
+              )}
               <span className="priority-group-count">{priorityTasks.length}</span>
             </div>
             

@@ -135,45 +135,88 @@ router.delete('/:id', (req, res) => {
 });
 
 // Bulk update tasks (e.g., mark multiple as done)
-router.patch('/bulk/update', (req, res) => {
-  const { ids, status, priority } = req.body;
+router.post('/bulk-update', (req, res) => {
+  const { taskIds, updates } = req.body;
   
-  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+  if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
     return res.status(400).json({ error: 'Task IDs array is required' });
   }
   
-  const updates = [];
+  const updateFields = [];
   const params = [];
   
-  if (status) {
+  if (updates.status) {
     const validStatuses = ['pending', 'in_progress', 'done'];
-    if (!validStatuses.includes(status)) {
+    if (!validStatuses.includes(updates.status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
-    updates.push('status = ?');
-    params.push(status);
+    updateFields.push('status = ?');
+    params.push(updates.status);
   }
   
-  if (priority) {
+  if (updates.priority) {
     const validPriorities = ['low', 'medium', 'high'];
-    if (!validPriorities.includes(priority)) {
+    if (!validPriorities.includes(updates.priority)) {
       return res.status(400).json({ error: 'Invalid priority' });
     }
-    updates.push('priority = ?');
-    params.push(priority);
+    updateFields.push('priority = ?');
+    params.push(updates.priority);
   }
   
-  if (updates.length === 0) {
+  if (updateFields.length === 0) {
     return res.status(400).json({ error: 'No valid updates provided' });
   }
   
-  const placeholders = ids.map(() => '?').join(', ');
-  const query = `UPDATE tasks SET ${updates.join(', ')} WHERE id IN (${placeholders})`;
+  const placeholders = taskIds.map(() => '?').join(', ');
+  const query = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id IN (${placeholders})`;
   
-  db.prepare(query).run(...params, ...ids);
+  const result = db.prepare(query).run(...params, ...taskIds);
   
-  const updatedTasks = db.prepare(`SELECT * FROM tasks WHERE id IN (${placeholders})`).all(...ids);
-  res.json(updatedTasks);
+  res.json({ updated: result.changes });
+});
+
+// Cleanup duplicate tasks - keep oldest, remove newer duplicates
+router.post('/cleanup/:projectId', (req, res) => {
+  const { projectId } = req.params;
+  
+  // Find duplicate tasks (same title, case-insensitive)
+  const allTasks = db.prepare(`
+    SELECT * FROM tasks WHERE projectId = ? ORDER BY createdAt ASC
+  `).all(projectId);
+  
+  const seen = new Map(); // normalized title -> first task id
+  const toDelete = [];
+  
+  for (const task of allTasks) {
+    const normalizedTitle = task.title.toLowerCase().trim()
+      .replace(/[.,!?;:]+$/g, '') // remove trailing punctuation
+      .replace(/\s+/g, ' '); // normalize whitespace
+    
+    if (seen.has(normalizedTitle)) {
+      // This is a duplicate - mark for deletion
+      // But if this one is 'done' and the original is not, update the original first
+      const originalId = seen.get(normalizedTitle);
+      if (task.status === 'done') {
+        db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run('done', originalId);
+      }
+      toDelete.push(task.id);
+    } else {
+      seen.set(normalizedTitle, task.id);
+    }
+  }
+  
+  // Delete duplicates
+  if (toDelete.length > 0) {
+    const placeholders = toDelete.map(() => '?').join(', ');
+    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...toDelete);
+  }
+  
+  const remaining = db.prepare('SELECT COUNT(*) as count FROM tasks WHERE projectId = ?').get(projectId);
+  
+  res.json({
+    deleted: toDelete.length,
+    remaining: remaining.count
+  });
 });
 
 export default router;

@@ -194,6 +194,16 @@ export const reanalyzeImage = (projectId, filename, analysisType = 'conversation
   body: JSON.stringify({ projectId, filename, analysisType })
 });
 
+// Task cleanup
+export const cleanupDuplicateTasks = (projectId) => request(`/tasks/cleanup/${projectId}`, {
+  method: 'POST'
+});
+
+export const bulkUpdateTasks = (taskIds, updates) => request('/tasks/bulk-update', {
+  method: 'POST',
+  body: JSON.stringify({ taskIds, updates })
+});
+
 // AI Assistant
 export const askAssistant = (projectId, question) => request('/assistant/ask', {
   method: 'POST',
