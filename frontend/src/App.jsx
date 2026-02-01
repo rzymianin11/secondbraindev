@@ -3,6 +3,7 @@ import ProjectList from './components/ProjectList';
 import ProjectDashboard from './components/ProjectDashboard';
 import DecisionView from './components/DecisionView';
 import NewDecision from './components/NewDecision';
+import RecordingView from './components/RecordingView';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/project/:projectId" element={<ProjectDashboard />} />
           <Route path="/project/:projectId/decision/new" element={<NewDecision />} />
           <Route path="/decision/:decisionId" element={<DecisionView />} />
+          <Route path="/recording/:recordingId" element={<RecordingView />} />
         </Routes>
       </main>
     </div>

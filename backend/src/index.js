@@ -1,7 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import projectsRouter from './routes/projects.js';
 import decisionsRouter from './routes/decisions.js';
+import recordingsRouter from './routes/recordings.js';
+import tasksRouter from './routes/tasks.js';
+import { isOpenAIConfigured } from './services/openai.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,10 +17,16 @@ app.use(express.json());
 // Routes
 app.use('/api/projects', projectsRouter);
 app.use('/api/decisions', decisionsRouter);
+app.use('/api/recordings', recordingsRouter);
+app.use('/api/tasks', tasksRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    openai: isOpenAIConfigured() ? 'configured' : 'not configured'
+  });
 });
 
 // Error handling

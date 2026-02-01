@@ -4,6 +4,9 @@ node_modules/
 # Database
 backend/data/
 
+# Uploads
+backend/uploads/
+
 # Build output
 frontend/dist/
 
