@@ -11,9 +11,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <a href="/" className="app-logo">
-          <img src="/logobrain.svg" alt="Second Brain" className="logo-img" />
-          <span className="app-title">Second Brain</span>
-          <span className="app-subtitle">for Devs</span>
+          <img src="/logobrain.svg" alt="Second Brain for Devs" className="logo-img" />
         </a>
       </header>
       <main className="app-main">

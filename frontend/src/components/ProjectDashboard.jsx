@@ -7,6 +7,7 @@ import TasksList from './TasksList';
 import TagFilter from './TagFilter';
 import TagBadge from './TagBadge';
 import SearchBar from './SearchBar';
+import EditProjectModal from './EditProjectModal';
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -18,6 +19,7 @@ export default function ProjectDashboard() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('decisions');
   const [selectedTag, setSelectedTag] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -50,6 +52,10 @@ export default function ProjectDashboard() {
 
   function handleTagSelect(tag) {
     setSelectedTag(tag);
+  }
+
+  function handleProjectSave(updatedProject) {
+    setProject(updatedProject);
   }
 
   function formatDate(dateString) {
@@ -99,7 +105,16 @@ export default function ProjectDashboard() {
 
       <div className="project-header">
         <div>
-          <h1>{project.name}</h1>
+          <div className="project-title-row">
+            <h1>{project.name}</h1>
+            <button 
+              className="btn-icon" 
+              onClick={() => setShowEditModal(true)}
+              title="Edit project"
+            >
+              ✎
+            </button>
+          </div>
           {project.description && (
             <p className="project-description">{project.description}</p>
           )}
@@ -118,6 +133,13 @@ export default function ProjectDashboard() {
           </Link>
         </div>
       </div>
+
+      <EditProjectModal
+        project={project}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleProjectSave}
+      />
 
       <div className="dashboard-tabs">
         <button 

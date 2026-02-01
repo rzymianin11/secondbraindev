@@ -28,6 +28,10 @@ export const createProject = (data) => request('/projects', {
   method: 'POST',
   body: JSON.stringify(data)
 });
+export const updateProject = (id, data) => request(`/projects/${id}`, {
+  method: 'PATCH',
+  body: JSON.stringify(data)
+});
 export const deleteProject = (id) => request(`/projects/${id}`, {
   method: 'DELETE'
 });
