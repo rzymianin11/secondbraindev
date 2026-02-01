@@ -128,6 +128,16 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// Normalize title for matching (remove punctuation, extra spaces, lowercase)
+function normalizeTitle(title) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?;:]+$/g, '') // remove trailing punctuation
+    .replace(/['"]/g, '') // remove quotes
+    .replace(/\s+/g, ' '); // normalize whitespace
+}
+
 // Save tasks from OCR with different modes
 router.post('/save-tasks', (req, res) => {
   const { projectId, tasks, mode = 'merge' } = req.body;
@@ -136,9 +146,13 @@ router.post('/save-tasks', (req, res) => {
     return res.status(400).json({ error: 'projectId and tasks array are required' });
   }
   
-  const findTask = db.prepare(`
-    SELECT * FROM tasks WHERE projectId = ? AND LOWER(title) = LOWER(?)
-  `);
+  // Get all existing tasks for fuzzy matching
+  const allExistingTasks = db.prepare('SELECT * FROM tasks WHERE projectId = ?').all(projectId);
+  const existingTasksMap = new Map();
+  for (const t of allExistingTasks) {
+    existingTasksMap.set(normalizeTitle(t.title), t);
+  }
+  
   const insertTask = db.prepare(`
     INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, ?, ?)
   `);
@@ -159,7 +173,8 @@ router.post('/save-tasks', (req, res) => {
     
     if (!title) continue;
     
-    const existingTask = findTask.get(projectId, title.trim());
+    const normalizedTitle = normalizeTitle(title);
+    const existingTask = existingTasksMap.get(normalizedTitle);
     
     if (mode === 'create_new') {
       // Always create new tasks with AI-determined priority
