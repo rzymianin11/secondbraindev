@@ -220,7 +220,17 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                       );
                     })}
                   </ul>
-                  <p className="tasks-note">Tasks have been automatically added to your project.</p>
+                  <p className="tasks-note">
+                    {result.taskStats ? (
+                      <>
+                        {result.taskStats.created > 0 && `${result.taskStats.created} new task(s) created. `}
+                        {result.taskStats.updated > 0 && `${result.taskStats.updated} task(s) updated. `}
+                        {result.taskStats.created === 0 && result.taskStats.updated === 0 && 'All tasks already exist in your project.'}
+                      </>
+                    ) : (
+                      'Tasks have been automatically added to your project.'
+                    )}
+                  </p>
                 </div>
               ) : null}
 

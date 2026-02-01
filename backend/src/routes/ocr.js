@@ -74,21 +74,46 @@ router.post('/analyze', upload.single('image'), async (req, res) => {
 
       savedAnalysis = db.prepare('SELECT * FROM image_analyses WHERE id = ?').get(result.lastInsertRowid);
       
-      // Auto-create tasks if extracted
+      // Auto-create or update tasks if extracted
       if (analysis.tasks && analysis.tasks.length > 0) {
+        const findTask = db.prepare(`
+          SELECT * FROM tasks WHERE projectId = ? AND LOWER(title) = LOWER(?)
+        `);
         const insertTask = db.prepare(`
           INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, ?, 'medium')
         `);
+        const updateTaskStatus = db.prepare(`
+          UPDATE tasks SET status = ? WHERE id = ?
+        `);
+        
+        let created = 0;
+        let updated = 0;
         
         for (const task of analysis.tasks) {
           // Handle both old format (string) and new format (object with status)
-          if (typeof task === 'string') {
-            insertTask.run(projectId, task, 'pending');
-          } else if (task.title) {
-            const status = task.status === 'done' ? 'done' : 'pending';
-            insertTask.run(projectId, task.title, status);
+          const title = typeof task === 'string' ? task : task.title;
+          const status = (typeof task === 'object' && task.status === 'done') ? 'done' : 'pending';
+          
+          if (!title) continue;
+          
+          // Check if task already exists
+          const existingTask = findTask.get(projectId, title.trim());
+          
+          if (existingTask) {
+            // Update status if task was marked as done (don't un-complete tasks)
+            if (status === 'done' && existingTask.status !== 'done') {
+              updateTaskStatus.run('done', existingTask.id);
+              updated++;
+            }
+          } else {
+            // Create new task
+            insertTask.run(projectId, title.trim(), status);
+            created++;
           }
         }
+        
+        // Add stats to analysis response
+        analysis.taskStats = { created, updated, total: analysis.tasks.length };
       }
     }
 
