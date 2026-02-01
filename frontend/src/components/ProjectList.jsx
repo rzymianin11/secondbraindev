@@ -9,10 +9,22 @@ export default function ProjectList() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [filter, setFilter] = useState('active'); // active, archived, all
 
   useEffect(() => {
     loadProjects();
   }, []);
+
+  const isArchived = (project) => project.name.startsWith('[Archived');
+  
+  const filteredProjects = projects.filter(p => {
+    if (filter === 'active') return !isArchived(p);
+    if (filter === 'archived') return isArchived(p);
+    return true;
+  });
+
+  const activeCount = projects.filter(p => !isArchived(p)).length;
+  const archivedCount = projects.filter(p => isArchived(p)).length;
 
   async function loadProjects() {
     try {
@@ -70,6 +82,27 @@ export default function ProjectList() {
 
       {error && <div className="error-message">{error}</div>}
 
+      <div className="project-filters">
+        <button 
+          className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
+          onClick={() => setFilter('active')}
+        >
+          Active <span className="filter-count">{activeCount}</span>
+        </button>
+        <button 
+          className={`filter-btn ${filter === 'archived' ? 'active' : ''}`}
+          onClick={() => setFilter('archived')}
+        >
+          📦 Archived <span className="filter-count">{archivedCount}</span>
+        </button>
+        <button 
+          className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+          onClick={() => setFilter('all')}
+        >
+          All <span className="filter-count">{projects.length}</span>
+        </button>
+      </div>
+
       {showForm && (
         <form className="form" onSubmit={handleSubmit}>
           <div className="form-group">
@@ -100,19 +133,40 @@ export default function ProjectList() {
         </form>
       )}
 
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="empty-state">
-          <p>No projects yet.</p>
-          <p>Create your first project to start tracking decisions.</p>
+          {filter === 'archived' ? (
+            <p>No archived projects yet.</p>
+          ) : filter === 'active' ? (
+            <>
+              <p>No active projects.</p>
+              <p>Create a new project to start tracking decisions.</p>
+            </>
+          ) : (
+            <>
+              <p>No projects yet.</p>
+              <p>Create your first project to start tracking decisions.</p>
+            </>
+          )}
         </div>
       ) : (
         <ul className="list">
-          {projects.map((project) => (
-            <li key={project.id} className="list-item">
+          {filteredProjects.map((project) => (
+            <li key={project.id} className={`list-item ${isArchived(project) ? 'archived' : ''}`}>
               <Link to={`/project/${project.id}`} className="list-item-link">
                 <div className="list-item-header">
-                  <h3 className="list-item-title">{project.name}</h3>
-                  <span className="list-item-date">{formatDate(project.createdAt)}</span>
+                  <h3 className="list-item-title">
+                    {isArchived(project) && <span className="archived-badge">📦</span>}
+                    {project.name.replace(/^\[Archived \d{4}-\d{2}-\d{2}\] /, '')}
+                  </h3>
+                  <span className="list-item-date">
+                    {isArchived(project) && (
+                      <span className="archived-date">
+                        {project.name.match(/\d{4}-\d{2}-\d{2}/)?.[0] || ''}
+                      </span>
+                    )}
+                    {!isArchived(project) && formatDate(project.createdAt)}
+                  </span>
                 </div>
                 {project.description && (
                   <p className="list-item-description">{project.description}</p>
