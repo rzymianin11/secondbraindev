@@ -77,11 +77,17 @@ router.post('/analyze', upload.single('image'), async (req, res) => {
       // Auto-create tasks if extracted
       if (analysis.tasks && analysis.tasks.length > 0) {
         const insertTask = db.prepare(`
-          INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, 'pending', 'medium')
+          INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, ?, 'medium')
         `);
         
         for (const task of analysis.tasks) {
-          insertTask.run(projectId, task);
+          // Handle both old format (string) and new format (object with status)
+          if (typeof task === 'string') {
+            insertTask.run(projectId, task, 'pending');
+          } else if (task.title) {
+            const status = task.status === 'done' ? 'done' : 'pending';
+            insertTask.run(projectId, task.title, status);
+          }
         }
       }
     }

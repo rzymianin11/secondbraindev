@@ -115,6 +115,8 @@ Extract and return:
 1. extractedText: The full text content visible in the image, preserving the conversation structure
 2. summary: A brief summary of what the conversation is about and key points discussed
 3. tasks: Any action items, TODOs, or tasks mentioned or implied in the conversation
+   - IMPORTANT: If a task appears crossed out/strikethrough, mark it as "done"
+   - If a task is not crossed out, mark it as "pending"
 
 Be thorough with text extraction - capture all visible text.`,
 
@@ -123,21 +125,27 @@ Be thorough with text extraction - capture all visible text.`,
 Extract and return:
 1. extractedText: All text content from the document
 2. summary: What this document is about and its key points
-3. tasks: Any action items or tasks mentioned`,
+3. tasks: Any action items or tasks mentioned
+   - IMPORTANT: If a task appears crossed out/strikethrough, mark it as "done"
+   - If a task is not crossed out, mark it as "pending"`,
 
     screenshot: `Analyze this screenshot.
 
 Extract and return:
 1. extractedText: All visible text in the screenshot
 2. summary: What this screenshot shows and its context
-3. tasks: Any relevant action items visible`,
+3. tasks: Any relevant action items visible
+   - IMPORTANT: If a task appears crossed out/strikethrough, mark it as "done"
+   - If a task is not crossed out, mark it as "pending"`,
 
     whiteboard: `Analyze this whiteboard/diagram image.
 
 Extract and return:
 1. extractedText: All text, labels, and annotations visible
 2. summary: What the whiteboard/diagram represents and its key concepts
-3. tasks: Any action items or TODOs noted`
+3. tasks: Any action items or TODOs noted
+   - IMPORTANT: If a task appears crossed out/strikethrough, mark it as "done"
+   - If a task is not crossed out, mark it as "pending"`
   };
 
   const visionModel = process.env.OPENAI_VISION_MODEL || 'gpt-4o';
@@ -152,8 +160,16 @@ Always respond with valid JSON in this exact format:
 {
   "extractedText": "full extracted text here",
   "summary": "brief summary here",
-  "tasks": ["task 1", "task 2"]
+  "tasks": [
+    {"title": "task description", "status": "pending"},
+    {"title": "crossed out task", "status": "done"}
+  ]
 }
+
+IMPORTANT for tasks:
+- If text is crossed out/strikethrough/completed, set status to "done"
+- If text is normal/not crossed out, set status to "pending"
+- Look for visual indicators: strikethrough lines, checkmarks, "[x]", "DONE" labels
 
 If no tasks are found, return an empty array for tasks.
 If text extraction fails, describe what you see in extractedText.

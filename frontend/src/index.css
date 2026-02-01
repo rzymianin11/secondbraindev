@@ -2326,6 +2326,30 @@ h3 {
   font-weight: bold;
 }
 
+.result-task-item.task-done {
+  opacity: 0.7;
+}
+
+.result-task-item.task-done .task-check {
+  color: var(--text-muted);
+}
+
+.task-strikethrough {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.task-status-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 4px;
+}
+
 .tasks-note {
   margin-top: 12px;
   font-size: 12px;

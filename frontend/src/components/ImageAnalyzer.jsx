@@ -208,12 +208,17 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                 <div className="result-section">
                   <h4>Extracted Tasks ({result.tasks.length})</h4>
                   <ul className="result-tasks">
-                    {result.tasks.map((task, i) => (
-                      <li key={i} className="result-task-item">
-                        <span className="task-check">✓</span>
-                        {task}
-                      </li>
-                    ))}
+                    {result.tasks.map((task, i) => {
+                      const title = typeof task === 'string' ? task : task.title;
+                      const isDone = typeof task === 'object' && task.status === 'done';
+                      return (
+                        <li key={i} className={`result-task-item ${isDone ? 'task-done' : ''}`}>
+                          <span className="task-check">{isDone ? '✓' : '○'}</span>
+                          <span className={isDone ? 'task-strikethrough' : ''}>{title}</span>
+                          {isDone && <span className="task-status-badge">Done</span>}
+                        </li>
+                      );
+                    })}
                   </ul>
                   <p className="tasks-note">Tasks have been automatically added to your project.</p>
                 </div>
