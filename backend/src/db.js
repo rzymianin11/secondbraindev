@@ -146,4 +146,11 @@ try {
   // Column already exists
 }
 
+// Add notes column to tasks if not exists
+try {
+  db.exec(`ALTER TABLE tasks ADD COLUMN notes TEXT`);
+} catch (e) {
+  // Column already exists
+}
+
 export default db;

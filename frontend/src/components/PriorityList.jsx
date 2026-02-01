@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTasksByProject, updateTask, cleanupDuplicateTasks, bulkUpdateTasks, archiveProject, getProjects } from '../api';
+import TaskDetailModal from './TaskDetailModal';
 
 const PRIORITY_CONFIG = {
   high: {
@@ -32,6 +33,7 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   const [cleanupStats, setCleanupStats] = useState(null);
   const [archiving, setArchiving] = useState(false);
   const [archivedProjects, setArchivedProjects] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -130,6 +132,11 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
     }
   }
 
+  function handleTaskUpdate(updatedTask) {
+    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+    if (onTaskUpdate) onTaskUpdate();
+  }
+
   const groupedTasks = {
     high: tasks.filter(t => t.priority === 'high'),
     medium: tasks.filter(t => t.priority === 'medium'),
@@ -223,21 +230,34 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
             
             <ul className="priority-tasks">
               {priorityTasks.map(task => (
-                <li key={task.id} className={`priority-task ${task.status === 'done' ? 'completed' : ''}`}>
+                <li key={task.id} className={`priority-task ${task.status === 'done' ? 'completed' : ''} ${task.notes ? 'has-notes' : ''}`}>
                   <button
                     className={`task-checkbox ${task.status === 'done' ? 'checked' : ''}`}
-                    onClick={() => handleStatusChange(task.id, task.status === 'done' ? 'pending' : 'done')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(task.id, task.status === 'done' ? 'pending' : 'done');
+                    }}
                     style={{ '--priority-color': config.color }}
                   >
                     {task.status === 'done' ? '✓' : ''}
                   </button>
                   
-                  <span className="task-title">{task.title}</span>
+                  <span 
+                    className="task-title clickable"
+                    onClick={() => setSelectedTask(task)}
+                  >
+                    {task.title}
+                    {task.notes && <span className="task-notes-indicator">📝</span>}
+                  </span>
                   
                   <select
                     className="priority-select"
                     value={task.priority}
-                    onChange={(e) => handlePriorityChange(task.id, e.target.value)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handlePriorityChange(task.id, e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
                     style={{ '--select-color': PRIORITY_CONFIG[task.priority].color }}
                   >
                     <option value="high">🔴 High</option>
@@ -279,6 +299,15 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
             })}
           </ul>
         </div>
+      )}
+
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          projectId={projectId}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+        />
       )}
     </div>
   );

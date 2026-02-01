@@ -74,7 +74,7 @@ router.post('/', (req, res) => {
   res.status(201).json(task);
 });
 
-// Update task (status, priority, title)
+// Update task (status, priority, title, notes)
 router.patch('/:id', (req, res) => {
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   
@@ -82,7 +82,7 @@ router.patch('/:id', (req, res) => {
     return res.status(404).json({ error: 'Task not found' });
   }
   
-  const { status, priority, title } = req.body;
+  const { status, priority, title, notes } = req.body;
   const updates = [];
   const params = [];
   
@@ -110,6 +110,11 @@ router.patch('/:id', (req, res) => {
     }
     updates.push('title = ?');
     params.push(title.trim());
+  }
+  
+  if (notes !== undefined) {
+    updates.push('notes = ?');
+    params.push(notes || null);
   }
   
   if (updates.length === 0) {

@@ -210,3 +210,8 @@ export const askAssistant = (projectId, question) => request('/assistant/ask', {
   method: 'POST',
   body: JSON.stringify({ projectId, question })
 });
+
+export const askTaskAssistant = (projectId, task, question) => request('/assistant/ask-task', {
+  method: 'POST',
+  body: JSON.stringify({ projectId, task, question })
+});

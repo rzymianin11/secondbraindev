@@ -124,4 +124,61 @@ Respond in the same language as the user's question.`
   }
 });
 
+// Ask AI about a specific task
+router.post('/ask-task', async (req, res) => {
+  const { projectId, task, question } = req.body;
+  
+  if (!task || !question) {
+    return res.status(400).json({ error: 'task and question are required' });
+  }
+  
+  if (!isOpenAIConfigured()) {
+    return res.status(503).json({ error: 'OpenAI API not configured' });
+  }
+  
+  try {
+    const client = getClient();
+    
+    const taskContext = `
+Task: ${task.title}
+Status: ${task.status}
+Priority: ${task.priority}
+${task.notes ? `Notes: ${task.notes}` : ''}
+`.trim();
+    
+    const response = await client.chat.completions.create({
+      model: process.env.OPENAI_CHAT_MODEL || process.env.OPENAI_VISION_MODEL || 'gpt-4.1',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful AI assistant for developers. You help them complete specific tasks.
+Your role is to:
+- Give practical, actionable advice
+- Break down complex tasks into steps
+- Identify potential issues
+- Suggest best practices
+- Provide code snippets or commands when relevant
+
+Keep responses concise but helpful. Use bullet points when listing things.
+Respond in the same language as the user's question.`
+        },
+        {
+          role: 'user',
+          content: `Here's the task I'm working on:\n\n${taskContext}\n\nMy question: ${question}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 800
+    });
+    
+    const answer = response.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+    
+    res.json({ answer });
+    
+  } catch (err) {
+    console.error('Task assistant error:', err);
+    res.status(500).json({ error: 'Failed to get response: ' + err.message });
+  }
+});
+
 export default router;
