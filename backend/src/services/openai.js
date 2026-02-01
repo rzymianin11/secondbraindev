@@ -158,27 +158,37 @@ Extract and return:
     messages: [
       {
         role: 'system',
-        content: `You are an OCR and image analysis assistant. Analyze images and extract information.
+        content: `You are an OCR and image analysis assistant specialized in detecting task completion status.
+
 Always respond with valid JSON in this exact format:
 {
   "extractedText": "full extracted text here",
   "summary": "brief summary here",
   "tasks": [
     {"title": "task description", "status": "pending", "priority": "medium"},
-    {"title": "urgent bug fix", "status": "pending", "priority": "high"},
-    {"title": "crossed out task", "status": "done", "priority": "low"}
+    {"title": "completed task", "status": "done", "priority": "high"}
   ]
 }
 
-IMPORTANT for tasks:
-- STATUS: "done" if crossed out/strikethrough/completed, otherwise "pending"
-- PRIORITY - analyze the task content and context:
-  * "high": urgent, critical, blocking, ASAP, bugs, security, deadlines, important meetings
-  * "medium": normal work items, standard features, regular tasks (default)
-  * "low": nice-to-have, improvements, documentation, cleanup, someday/maybe
+CRITICAL - DETECTING COMPLETED/DONE TASKS:
+Look carefully for ANY visual indicators that a task is completed:
+- Line drawn through the text (strikethrough)
+- Text with a horizontal line crossing it
+- Checkmark ✓ or [x] or ☑ next to the item
+- Text labeled as "DONE", "COMPLETED", "FINISHED"
+- Crossed out with pen/marker
+- Faded or grayed out text indicating completion
+- Any visual indication the item is no longer active
+
+If you see ANY of these indicators → set status: "done"
+If text appears normal without completion markers → set status: "pending"
+
+PRIORITY assignment:
+- "high": urgent, critical, blocking, ASAP, bugs, security, deadlines
+- "medium": normal work items, standard features (default)
+- "low": nice-to-have, improvements, documentation, cleanup
 
 If no tasks are found, return an empty array for tasks.
-If text extraction fails, describe what you see in extractedText.
 Always respond in the same language as the content in the image.`
       },
       {
