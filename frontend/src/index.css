@@ -2659,7 +2659,6 @@ h3 {
   bottom: 96px;
   right: 24px;
   width: 380px;
-  max-height: 500px;
   display: flex;
   flex-direction: column;
   background: rgba(22, 33, 62, 0.98);
@@ -2670,6 +2669,41 @@ h3 {
   z-index: 999;
   animation: slideUp 0.3s ease-out;
   overflow: hidden;
+}
+
+.ai-resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.ai-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 3px;
+  background: var(--glass-border);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ai-resize-handle:hover::after,
+.ai-assistant-panel:hover .ai-resize-handle::after {
+  opacity: 1;
+}
+
+.ai-resize-handle:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .ai-assistant-header {
@@ -2705,8 +2739,7 @@ h3 {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  min-height: 200px;
-  max-height: 300px;
+  min-height: 100px;
 }
 
 .ai-welcome {

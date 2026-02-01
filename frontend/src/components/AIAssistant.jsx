@@ -34,8 +34,12 @@ export default function AIAssistant({ projectId, projectName }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(500);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const isResizing = useRef(false);
+  const startY = useRef(0);
+  const startHeight = useRef(0);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -46,6 +50,32 @@ export default function AIAssistant({ projectId, projectName }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Resize handlers
+  function handleResizeStart(e) {
+    isResizing.current = true;
+    startY.current = e.clientY;
+    startHeight.current = panelHeight;
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  function handleResizeMove(e) {
+    if (!isResizing.current) return;
+    const diff = startY.current - e.clientY;
+    const newHeight = Math.min(Math.max(startHeight.current + diff, 300), window.innerHeight - 150);
+    setPanelHeight(newHeight);
+  }
+
+  function handleResizeEnd() {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', handleResizeEnd);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
 
   async function handleSend(customPrompt) {
     const question = customPrompt || input.trim();
@@ -96,7 +126,12 @@ export default function AIAssistant({ projectId, projectName }) {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="ai-assistant-panel">
+        <div className="ai-assistant-panel" style={{ height: panelHeight }}>
+          <div 
+            className="ai-resize-handle"
+            onMouseDown={handleResizeStart}
+            title="Drag to resize"
+          />
           <div className="ai-assistant-header">
             <div className="ai-header-info">
               <span className="ai-avatar">🤖</span>
