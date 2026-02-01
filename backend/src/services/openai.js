@@ -140,8 +140,10 @@ Extract and return:
 3. tasks: Any action items or TODOs noted`
   };
 
+  const visionModel = process.env.OPENAI_VISION_MODEL || 'gpt-4o';
+  
   const response = await client.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: visionModel,
     messages: [
       {
         role: 'system',
