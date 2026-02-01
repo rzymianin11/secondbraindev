@@ -8,6 +8,7 @@ import tasksRouter from './routes/tasks.js';
 import tagsRouter from './routes/tags.js';
 import relationsRouter from './routes/relations.js';
 import searchRouter from './routes/search.js';
+import ocrRouter from './routes/ocr.js';
 import { isOpenAIConfigured } from './services/openai.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/relations', relationsRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/ocr', ocrRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

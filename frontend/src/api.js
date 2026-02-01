@@ -160,3 +160,27 @@ export const searchProject = (projectId, query) => request('/search', {
   method: 'POST',
   body: JSON.stringify({ projectId, query })
 });
+
+// OCR / Image Analysis
+export async function analyzeImage(projectId, imageFile, analysisType = 'conversation') {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+  formData.append('projectId', projectId);
+  formData.append('analysisType', analysisType);
+  
+  const response = await fetch(`${API_BASE}/ocr/analyze`, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Analysis failed' }));
+    throw new Error(error.error || 'Analysis failed');
+  }
+  
+  return response.json();
+}
+
+export const getImageAnalyses = (projectId) => request(`/ocr/project/${projectId}`);
+export const getImageAnalysis = (id) => request(`/ocr/${id}`);
+export const deleteImageAnalysis = (id) => request(`/ocr/${id}`, { method: 'DELETE' });

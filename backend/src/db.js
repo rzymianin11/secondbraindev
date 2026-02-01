@@ -122,6 +122,21 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_relations_from ON decision_relations(fromDecisionId);
   CREATE INDEX IF NOT EXISTS idx_relations_to ON decision_relations(toDecisionId);
+
+  -- Image OCR analyses
+  CREATE TABLE IF NOT EXISTS image_analyses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    projectId INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    analysisType TEXT NOT NULL DEFAULT 'conversation',
+    extractedText TEXT,
+    summary TEXT,
+    tasks TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_image_analyses_project ON image_analyses(projectId);
 `);
 
 // Add embedding column if not exists (for smart search)

@@ -8,6 +8,7 @@ import TagFilter from './TagFilter';
 import TagBadge from './TagBadge';
 import SearchBar from './SearchBar';
 import EditProjectModal from './EditProjectModal';
+import ImageAnalyzer from './ImageAnalyzer';
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -160,6 +161,12 @@ export default function ProjectDashboard() {
         >
           Tasks ({tasks.filter(t => t.status !== 'done').length})
         </button>
+        <button 
+          className={`tab ${activeTab === 'ocr' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ocr')}
+        >
+          OCR
+        </button>
       </div>
 
       {activeTab === 'decisions' && (
@@ -229,6 +236,15 @@ export default function ProjectDashboard() {
             tasks={tasks} 
             projectId={Number(projectId)}
             onTaskUpdate={loadData}
+          />
+        </section>
+      )}
+
+      {activeTab === 'ocr' && (
+        <section className="ocr-section">
+          <ImageAnalyzer 
+            projectId={Number(projectId)}
+            onAnalysisComplete={loadData}
           />
         </section>
       )}

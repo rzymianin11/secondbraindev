@@ -96,6 +96,110 @@ Format: [{"title": "Task description", "priority": "low|medium|high"}]`
 }
 
 /**
+ * Analyze image with GPT-4 Vision (OCR + understanding)
+ * @param {string} base64Image - Base64 encoded image
+ * @param {string} mimeType - Image MIME type
+ * @param {string} analysisType - Type of analysis: 'conversation', 'document', 'screenshot', 'whiteboard'
+ * @returns {Promise<{extractedText: string, summary: string, tasks: string[]}>}
+ */
+export async function analyzeImage(base64Image, mimeType, analysisType = 'conversation') {
+  const client = getClient();
+  if (!client) {
+    throw new Error('OPENAI_API_KEY is not configured');
+  }
+
+  const prompts = {
+    conversation: `Analyze this image of a conversation (chat, messages, email, etc.).
+
+Extract and return:
+1. extractedText: The full text content visible in the image, preserving the conversation structure
+2. summary: A brief summary of what the conversation is about and key points discussed
+3. tasks: Any action items, TODOs, or tasks mentioned or implied in the conversation
+
+Be thorough with text extraction - capture all visible text.`,
+
+    document: `Analyze this document image.
+
+Extract and return:
+1. extractedText: All text content from the document
+2. summary: What this document is about and its key points
+3. tasks: Any action items or tasks mentioned`,
+
+    screenshot: `Analyze this screenshot.
+
+Extract and return:
+1. extractedText: All visible text in the screenshot
+2. summary: What this screenshot shows and its context
+3. tasks: Any relevant action items visible`,
+
+    whiteboard: `Analyze this whiteboard/diagram image.
+
+Extract and return:
+1. extractedText: All text, labels, and annotations visible
+2. summary: What the whiteboard/diagram represents and its key concepts
+3. tasks: Any action items or TODOs noted`
+  };
+
+  const response = await client.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an OCR and image analysis assistant. Analyze images and extract information.
+Always respond with valid JSON in this exact format:
+{
+  "extractedText": "full extracted text here",
+  "summary": "brief summary here",
+  "tasks": ["task 1", "task 2"]
+}
+
+If no tasks are found, return an empty array for tasks.
+If text extraction fails, describe what you see in extractedText.
+Always respond in the same language as the content in the image.`
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: prompts[analysisType] || prompts.conversation
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${mimeType};base64,${base64Image}`,
+              detail: 'high'
+            }
+          }
+        ]
+      }
+    ],
+    max_tokens: 4000,
+    temperature: 0.2
+  });
+
+  const content = response.choices[0]?.message?.content?.trim();
+
+  try {
+    // Try to parse as JSON
+    const result = JSON.parse(content);
+    return {
+      extractedText: result.extractedText || '',
+      summary: result.summary || '',
+      tasks: Array.isArray(result.tasks) ? result.tasks : []
+    };
+  } catch (e) {
+    // If JSON parsing fails, return the raw content
+    console.error('Failed to parse Vision response as JSON:', e.message);
+    return {
+      extractedText: content,
+      summary: '',
+      tasks: []
+    };
+  }
+}
+
+/**
  * Check if OpenAI is configured
  */
 export function isOpenAIConfigured() {
