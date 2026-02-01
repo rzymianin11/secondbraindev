@@ -9,6 +9,7 @@ import TagBadge from './TagBadge';
 import SearchBar from './SearchBar';
 import EditProjectModal from './EditProjectModal';
 import ImageAnalyzer from './ImageAnalyzer';
+import PriorityList from './PriorityList';
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -162,6 +163,12 @@ export default function ProjectDashboard() {
           Tasks ({tasks.filter(t => t.status !== 'done').length})
         </button>
         <button 
+          className={`tab tab-priority ${activeTab === 'priority' ? 'active' : ''}`}
+          onClick={() => setActiveTab('priority')}
+        >
+          🎯 Priority
+        </button>
+        <button 
           className={`tab ${activeTab === 'ocr' ? 'active' : ''}`}
           onClick={() => setActiveTab('ocr')}
         >
@@ -234,6 +241,15 @@ export default function ProjectDashboard() {
         <section className="tasks-section">
           <TasksList 
             tasks={tasks} 
+            projectId={Number(projectId)}
+            onTaskUpdate={loadData}
+          />
+        </section>
+      )}
+
+      {activeTab === 'priority' && (
+        <section className="priority-section">
+          <PriorityList 
             projectId={Number(projectId)}
             onTaskUpdate={loadData}
           />
