@@ -5,6 +5,7 @@ import DecisionView from './components/DecisionView';
 import NewDecision from './components/NewDecision';
 import RecordingView from './components/RecordingView';
 import GraphView from './components/GraphView';
+import QuickNotes from './components/QuickNotes';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/recording/:recordingId" element={<RecordingView />} />
         </Routes>
       </main>
+      <QuickNotes />
     </div>
   );
 }
