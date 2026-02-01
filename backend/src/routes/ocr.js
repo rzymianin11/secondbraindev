@@ -167,6 +167,17 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// Serve image file
+router.get('/image/:filename', (req, res) => {
+  const imagePath = path.join(uploadsDir, 'images', req.params.filename);
+  
+  if (!fs.existsSync(imagePath)) {
+    return res.status(404).json({ error: 'Image not found' });
+  }
+  
+  res.sendFile(imagePath);
+});
+
 // Delete analysis
 router.delete('/:id', (req, res) => {
   const analysis = db.prepare('SELECT * FROM image_analyses WHERE id = ?').get(req.params.id);

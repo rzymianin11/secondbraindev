@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { analyzeImage } from '../api';
+import { useState, useRef, useEffect } from 'react';
+import { analyzeImage, getImageAnalyses } from '../api';
 
 const ANALYSIS_TYPES = [
   { value: 'conversation', label: 'Conversation / Chat', icon: '💬' },
@@ -16,7 +16,22 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   const [currentFile, setCurrentFile] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(true);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    loadHistory();
+  }, [projectId]);
+
+  async function loadHistory() {
+    try {
+      const analyses = await getImageAnalyses(projectId);
+      setHistory(analyses);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    }
+  }
 
   function handleDragOver(e) {
     e.preventDefault();
@@ -90,6 +105,8 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     setCurrentFile(null);
     setResult(null);
     setError(null);
+    setShowHistory(true);
+    loadHistory(); // Refresh history
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -99,6 +116,26 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     if (currentFile) {
       analyzeFile(currentFile);
     }
+  }
+
+  function viewHistoryItem(item) {
+    setShowHistory(false);
+    setPreview(`/api/ocr/image/${item.filename}`);
+    setResult({
+      extractedText: item.extractedText,
+      summary: item.summary,
+      tasks: item.tasks || []
+    });
+    setError(null);
+  }
+
+  function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   function handlePaste(e) {
@@ -135,32 +172,62 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
         </div>
       </div>
 
-      {!preview ? (
-        <div
-          className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
-          <div className="drop-zone-content">
-            <div className="drop-icon">📷</div>
-            <p className="drop-text">
-              Drop image here, click to select, or <kbd>Ctrl+V</kbd> to paste
-            </p>
-            <p className="drop-hint">
-              Supports: JPEG, PNG, GIF, WebP (max 20MB)
-            </p>
+      {!preview && showHistory ? (
+        <>
+          <div
+            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            <div className="drop-zone-content">
+              <div className="drop-icon">📷</div>
+              <p className="drop-text">
+                Drop image here, click to select, or <kbd>Ctrl+V</kbd> to paste
+              </p>
+              <p className="drop-hint">
+                Supports: JPEG, PNG, GIF, WebP (max 20MB)
+              </p>
+            </div>
           </div>
-        </div>
-      ) : (
+
+          {history.length > 0 && (
+            <div className="image-history">
+              <h4>Recent Analyses</h4>
+              <div className="history-grid">
+                {history.slice(0, 6).map(item => (
+                  <button
+                    key={item.id}
+                    className="history-item"
+                    onClick={() => viewHistoryItem(item)}
+                  >
+                    <div className="history-item-icon">
+                      {ANALYSIS_TYPES.find(t => t.value === item.analysisType)?.icon || '📷'}
+                    </div>
+                    <div className="history-item-info">
+                      <span className="history-item-date">{formatDate(item.createdAt)}</span>
+                      <span className="history-item-summary">
+                        {item.summary ? item.summary.slice(0, 50) + (item.summary.length > 50 ? '...' : '') : 'No summary'}
+                      </span>
+                      {item.tasks && item.tasks.length > 0 && (
+                        <span className="history-item-tasks">{item.tasks.length} tasks</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : preview ? (
         <div className="analyzer-content">
           <div className="preview-section">
             <img src={preview} alt="Preview" className="image-preview" />
