@@ -2348,7 +2348,6 @@ h3 {
 }
 
 .task-status-badge {
-  margin-left: auto;
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 600;
@@ -2356,6 +2355,30 @@ h3 {
   color: var(--accent-success);
   background: rgba(16, 185, 129, 0.15);
   border-radius: 4px;
+}
+
+.task-priority-badge {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.task-priority-badge.priority-high {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.task-priority-badge.priority-medium {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.task-priority-badge.priority-low {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .tasks-note {

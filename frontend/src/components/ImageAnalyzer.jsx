@@ -309,10 +309,14 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                     {result.tasks.map((task, i) => {
                       const title = typeof task === 'string' ? task : task.title;
                       const isDone = typeof task === 'object' && task.status === 'done';
+                      const priority = typeof task === 'object' ? task.priority : 'medium';
                       return (
                         <li key={i} className={`result-task-item ${isDone ? 'task-done' : ''}`}>
                           <span className="task-check">{isDone ? '✓' : '○'}</span>
                           <span className={isDone ? 'task-strikethrough' : ''}>{title}</span>
+                          <span className={`task-priority-badge priority-${priority || 'medium'}`}>
+                            {priority || 'medium'}
+                          </span>
                           {isDone && <span className="task-status-badge">Done</span>}
                         </li>
                       );

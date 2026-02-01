@@ -140,7 +140,7 @@ router.post('/save-tasks', (req, res) => {
     SELECT * FROM tasks WHERE projectId = ? AND LOWER(title) = LOWER(?)
   `);
   const insertTask = db.prepare(`
-    INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, ?, 'medium')
+    INSERT INTO tasks (projectId, title, status, priority) VALUES (?, ?, ?, ?)
   `);
   const updateTaskStatus = db.prepare(`
     UPDATE tasks SET status = ? WHERE id = ?
@@ -153,14 +153,17 @@ router.post('/save-tasks', (req, res) => {
   for (const task of tasks) {
     const title = typeof task === 'string' ? task : task.title;
     const status = (typeof task === 'object' && task.status === 'done') ? 'done' : 'pending';
+    const priority = (typeof task === 'object' && ['low', 'medium', 'high'].includes(task.priority)) 
+      ? task.priority 
+      : 'medium';
     
     if (!title) continue;
     
     const existingTask = findTask.get(projectId, title.trim());
     
     if (mode === 'create_new') {
-      // Always create new tasks
-      insertTask.run(projectId, title.trim(), status);
+      // Always create new tasks with AI-determined priority
+      insertTask.run(projectId, title.trim(), status, priority);
       created++;
     } else {
       // Merge mode: update existing or create new
@@ -172,7 +175,7 @@ router.post('/save-tasks', (req, res) => {
           skipped++;
         }
       } else {
-        insertTask.run(projectId, title.trim(), status);
+        insertTask.run(projectId, title.trim(), status, priority);
         created++;
       }
     }
