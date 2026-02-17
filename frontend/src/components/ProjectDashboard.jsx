@@ -191,7 +191,7 @@ export default function ProjectDashboard() {
           className={`tab ${activeTab === 'tasks' ? 'active' : ''}`}
           onClick={() => setActiveTab('tasks')}
         >
-          Tasks ({tasks.filter(t => t.status !== 'done').length})
+          Tasks ({tasks.length})
         </button>
         <button 
           className={`tab tab-priority ${activeTab === 'priority' ? 'active' : ''}`}

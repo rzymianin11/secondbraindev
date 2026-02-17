@@ -38,7 +38,7 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   useEffect(() => {
     loadTasks();
     loadArchivedProjects();
-  }, [projectId, filter]);
+  }, [projectId]);
 
   async function loadArchivedProjects() {
     try {
@@ -53,9 +53,8 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   async function loadTasks() {
     try {
       setLoading(true);
-      const data = await getTasksByProject(projectId, 
-        filter !== 'all' ? { status: filter } : {}
-      );
+      // Always load ALL tasks to calculate correct progress
+      const data = await getTasksByProject(projectId, {});
       setTasks(data);
     } catch (err) {
       console.error('Failed to load tasks:', err);
@@ -137,12 +136,18 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
     if (onTaskUpdate) onTaskUpdate();
   }
 
+  // Filter tasks based on selected filter for display
+  const filteredTasks = filter === 'all' 
+    ? tasks 
+    : tasks.filter(t => filter === 'done' ? t.status === 'done' : t.status !== 'done');
+
   const groupedTasks = {
-    high: tasks.filter(t => t.priority === 'high'),
-    medium: tasks.filter(t => t.priority === 'medium'),
-    low: tasks.filter(t => t.priority === 'low')
+    high: filteredTasks.filter(t => t.priority === 'high'),
+    medium: filteredTasks.filter(t => t.priority === 'medium'),
+    low: filteredTasks.filter(t => t.priority === 'low')
   };
 
+  // Progress is calculated from ALL tasks, not filtered
   const totalPending = tasks.filter(t => t.status !== 'done').length;
   const totalDone = tasks.filter(t => t.status === 'done').length;
   const totalTasks = tasks.length;
@@ -287,7 +292,7 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
         );
       })}
 
-      {tasks.length === 0 && (
+      {filteredTasks.length === 0 && (
         <div className="priority-empty">
           <p>No tasks {filter === 'done' ? 'completed' : 'to do'} yet.</p>
         </div>
