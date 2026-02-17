@@ -47,7 +47,7 @@ export async function extractTasksFromTranscript(transcript) {
   }
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4.1-mini',
     messages: [
       {
         role: 'system',
@@ -233,6 +233,89 @@ Always respond in the same language as the content in the image.`
     console.error('Failed to parse Vision response as JSON:', e.message);
     return {
       extractedText: content,
+      summary: '',
+      tasks: []
+    };
+  }
+}
+
+/**
+ * Analyze text content (for txt, vtt, docx files)
+ * @param {string} textContent - The text content to analyze
+ * @param {string} analysisType - Type of analysis: 'conversation', 'document', 'screenshot', 'whiteboard'
+ * @returns {Promise<{extractedText: string, summary: string, tasks: Array}>}
+ */
+export async function analyzeText(textContent, analysisType = 'conversation') {
+  const client = getClient();
+  if (!client) {
+    throw new Error('OPENAI_API_KEY is not configured');
+  }
+
+  const prompts = {
+    conversation: `Analyze this text from a conversation or meeting transcript.
+Extract any actionable tasks, decisions, or important items mentioned.`,
+
+    document: `Analyze this document text.
+Extract the main content, summarize it, and identify any tasks or action items.`,
+
+    screenshot: `Analyze this text content.
+Extract and organize the information, identifying any tasks or actionable items.`,
+
+    whiteboard: `Analyze this text (possibly from a whiteboard or notes).
+Extract ideas, tasks, and action items.`
+  };
+
+  const response = await client.chat.completions.create({
+    model: 'gpt-4.1-mini',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a text analysis assistant that extracts tasks and summarizes content.
+
+Always respond with valid JSON in this exact format:
+{
+  "extractedText": "the original text (can be shortened if very long)",
+  "summary": "brief summary of what the text is about",
+  "tasks": [
+    {"title": "task description", "status": "pending", "priority": "medium"},
+    {"title": "another task", "status": "done", "priority": "high"}
+  ]
+}
+
+For STATUS:
+- "done": if the task is explicitly marked as complete, finished, or done
+- "pending": if the task is still to be done (default)
+
+For PRIORITY:
+- "high": urgent, critical, blocking, ASAP, bugs, security, deadlines
+- "medium": normal work items, standard features (default)
+- "low": nice-to-have, improvements, documentation, cleanup
+
+If no clear tasks are found, return an empty array for tasks.
+Always respond in the same language as the content.`
+      },
+      {
+        role: 'user',
+        content: `${prompts[analysisType] || prompts.conversation}\n\nText to analyze:\n\n${textContent}`
+      }
+    ],
+    max_tokens: 4000,
+    temperature: 0.2
+  });
+
+  const content = response.choices[0]?.message?.content?.trim();
+
+  try {
+    const result = JSON.parse(content);
+    return {
+      extractedText: result.extractedText || textContent.slice(0, 2000),
+      summary: result.summary || '',
+      tasks: Array.isArray(result.tasks) ? result.tasks : []
+    };
+  } catch (e) {
+    console.error('Failed to parse text analysis response as JSON:', e.message);
+    return {
+      extractedText: textContent.slice(0, 2000),
       summary: '',
       tasks: []
     };

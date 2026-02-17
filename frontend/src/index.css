@@ -743,6 +743,29 @@ h3 {
   flex-shrink: 0;
 }
 
+.action-group {
+  display: flex;
+  gap: 0;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.action-group .btn {
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+}
+
+.action-group .btn:hover {
+  background: var(--glass-bg-hover);
+}
+
+.action-group .btn-record {
+  border: none;
+}
+
 /* ============================================
    DASHBOARD TABS
    ============================================ */
@@ -2043,6 +2066,77 @@ h3 {
   color: var(--text-muted);
 }
 
+/* Search Sections */
+.search-section {
+  padding: 8px 0;
+}
+
+.search-section-label {
+  padding: 8px 20px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.search-task-item {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-task-item.done {
+  opacity: 0.6;
+}
+
+.search-task-item.done .search-result-title {
+  text-decoration: line-through;
+}
+
+.task-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.task-status-dot.pending {
+  background: var(--text-muted);
+}
+
+.task-status-dot.in_progress {
+  background: var(--accent-warning);
+}
+
+.task-status-dot.done {
+  background: var(--accent-success);
+}
+
+.search-task-priority {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.search-task-priority.priority-high {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.search-task-priority.priority-medium {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.search-task-priority.priority-low {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+
 .search-loading {
   display: flex;
   align-items: center;
@@ -2238,11 +2332,40 @@ h3 {
   margin-bottom: 20px;
 }
 
+.analyzer-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 .analyzer-header h3 {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin: 0;
+}
+
+.analyzer-shortcut-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.analyzer-shortcut-hint kbd {
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.analyzer-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .analysis-type-selector {
@@ -2351,6 +2474,31 @@ h3 {
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
   object-fit: contain;
+}
+
+.file-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  gap: 8px;
+  min-width: 200px;
+}
+
+.file-preview .file-icon {
+  font-size: 48px;
+}
+
+.file-preview .file-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+  word-break: break-all;
+  text-align: center;
+  max-width: 250px;
 }
 
 .analyzing-state {
@@ -2622,6 +2770,35 @@ h3 {
 .priority-label {
   font-size: 16px;
   color: var(--text-secondary);
+}
+
+/* Progress Indicator */
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.progress-bar {
+  width: 120px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .priority-filters {
@@ -3472,15 +3649,33 @@ h3 {
 /* Task list styling for clickable titles */
 .task-title.clickable {
   cursor: pointer;
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: var(--radius-sm);
 }
 
 .task-title.clickable:hover {
   color: var(--accent-primary);
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.task-expand-icon {
+  font-size: 12px;
+  opacity: 0;
+  transition: all var(--transition-fast);
+  color: var(--accent-primary);
+}
+
+.task-title.clickable:hover .task-expand-icon {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 .task-notes-indicator {
-  margin-left: 8px;
   font-size: 12px;
   opacity: 0.7;
 }
@@ -3680,8 +3875,7 @@ h3 {
 
 .history-toggle {
   display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 0;
 }
 
 .toggle-btn {

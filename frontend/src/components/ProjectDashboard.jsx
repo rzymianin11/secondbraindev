@@ -151,15 +151,17 @@ export default function ProjectDashboard() {
           )}
         </div>
         <div className="project-actions">
-          <SearchBar projectId={Number(projectId)} />
-          <Link to={`/project/${projectId}/graph`} className="btn" title="View Decision Graph">
-            Graph
-          </Link>
-          <RecordingButton 
-            projectId={Number(projectId)} 
-            onRecordingComplete={handleRecordingComplete}
-          />
-          <Link to={`/project/${projectId}/decision/new`} className="btn btn-primary">
+          <SearchBar projectId={Number(projectId)} tasks={tasks} />
+          <div className="action-group">
+            <Link to={`/project/${projectId}/graph`} className="btn" title="View Decision Graph (⌘G)">
+              Graph
+            </Link>
+            <RecordingButton 
+              projectId={Number(projectId)} 
+              onRecordingComplete={handleRecordingComplete}
+            />
+          </div>
+          <Link to={`/project/${projectId}/decision/new`} className="btn btn-primary" title="Add Decision (⌘N)">
             Add Decision
           </Link>
         </div>

@@ -48,12 +48,30 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     setIsDragging(false);
   }
 
+  const ALLOWED_TYPES = [
+    'image/',
+    'text/plain',
+    'text/vtt',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+  const ALLOWED_EXTENSIONS = ['.txt', '.vtt', '.docx'];
+
+  function isAllowedFile(file) {
+    const typeMatch = ALLOWED_TYPES.some(type => 
+      type.endsWith('/') ? file.type.startsWith(type) : file.type === type
+    );
+    const extMatch = ALLOWED_EXTENSIONS.some(ext => 
+      file.name.toLowerCase().endsWith(ext)
+    );
+    return typeMatch || extMatch;
+  }
+
   function handleDrop(e) {
     e.preventDefault();
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && isAllowedFile(file)) {
       handleFile(file);
     }
   }
@@ -65,16 +83,33 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     }
   }
 
+  function isImageFile(file) {
+    return file.type.startsWith('image/');
+  }
+
+  function getFileIcon(file) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.txt')) return '📄';
+    if (name.endsWith('.vtt')) return '🎬';
+    if (name.endsWith('.docx')) return '📝';
+    return '📁';
+  }
+
   function handleFile(file) {
     // Store file for retry
     setCurrentFile(file);
     
     // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
+    if (isImageFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // For non-image files, use a placeholder with filename
+      setPreview(`file:${file.name}`);
+    }
     
     // Analyze
     analyzeFile(file);
@@ -192,11 +227,9 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
     if (!items) return;
 
     for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          handleFile(file);
-        }
+      const file = item.getAsFile();
+      if (file && isAllowedFile(file)) {
+        handleFile(file);
         break;
       }
     }
@@ -205,40 +238,45 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
   return (
     <div className="image-analyzer" onPaste={handlePaste}>
       <div className="analyzer-header">
-        <h3>Image Analysis (OCR)</h3>
-        <div className="analysis-type-selector">
-          {ANALYSIS_TYPES.map(type => (
-            <button
-              key={type.value}
-              className={`type-btn ${analysisType === type.value ? 'active' : ''}`}
-              onClick={() => setAnalysisType(type.value)}
-              disabled={analyzing}
-            >
-              <span className="type-icon">{type.icon}</span>
-              <span className="type-label">{type.label}</span>
-            </button>
-          ))}
+        <div className="analyzer-title-row">
+          <h3>Image Analysis (OCR)</h3>
+          <span className="analyzer-shortcut-hint">Paste: <kbd>Ctrl+V</kbd></span>
+        </div>
+        <div className="analyzer-controls">
+          <div className="analysis-type-selector">
+            {ANALYSIS_TYPES.map(type => (
+              <button
+                key={type.value}
+                className={`type-btn ${analysisType === type.value ? 'active' : ''}`}
+                onClick={() => setAnalysisType(type.value)}
+                disabled={analyzing}
+              >
+                <span className="type-icon">{type.icon}</span>
+                <span className="type-label">{type.label}</span>
+              </button>
+            ))}
+          </div>
+          {!preview && (
+            <div className="history-toggle">
+              <button 
+                className={`toggle-btn ${!showAllProjects ? 'active' : ''}`}
+                onClick={() => setShowAllProjects(false)}
+              >
+                This Project
+              </button>
+              <button 
+                className={`toggle-btn ${showAllProjects ? 'active' : ''}`}
+                onClick={() => setShowAllProjects(true)}
+              >
+                All Projects
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* History thumbnails - always visible when no preview */}
-      {!preview && (
-        <div className="history-toggle">
-          <button 
-            className={`toggle-btn ${!showAllProjects ? 'active' : ''}`}
-            onClick={() => setShowAllProjects(false)}
-          >
-            This Project
-          </button>
-          <button 
-            className={`toggle-btn ${showAllProjects ? 'active' : ''}`}
-            onClick={() => setShowAllProjects(true)}
-          >
-            All Projects
-          </button>
-        </div>
-      )}
-      {!preview && history.length > 0 && (
+      {!preview && history.length > 0 && showHistory && (
         <div className="image-history-thumbnails">
           {history.slice(0, 8).map(item => (
             <button
@@ -285,7 +323,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.txt,.vtt,.docx"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
@@ -295,7 +333,7 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
                 Drop image here, click to select, or <kbd>Ctrl+V</kbd> to paste
               </p>
               <p className="drop-hint">
-                Supports: JPEG, PNG, GIF, WebP (max 20MB)
+                Supports: JPEG, PNG, GIF, WebP, TXT, VTT, DOCX (max 20MB)
               </p>
             </div>
           </div>
@@ -303,7 +341,14 @@ export default function ImageAnalyzer({ projectId, onAnalysisComplete }) {
       ) : (
         <div className="analyzer-content">
           <div className="preview-section">
-            <img src={preview} alt="Preview" className="image-preview" />
+            {preview.startsWith('file:') ? (
+              <div className="file-preview">
+                <span className="file-icon">{currentFile ? getFileIcon(currentFile) : '📁'}</span>
+                <span className="file-name">{preview.replace('file:', '')}</span>
+              </div>
+            ) : (
+              <img src={preview} alt="Preview" className="image-preview" />
+            )}
             <div className="preview-actions">
               <button className="btn btn-small" onClick={handleReset}>
                 New Image

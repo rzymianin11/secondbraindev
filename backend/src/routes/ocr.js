@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import db, { uploadsDir } from '../db.js';
-import { analyzeImage, isOpenAIConfigured } from '../services/openai.js';
+import { analyzeImage, analyzeText, isOpenAIConfigured } from '../services/openai.js';
 
 const router = Router();
 
@@ -22,18 +22,64 @@ const storage = multer.diskStorage({
   }
 });
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_TEXT_TYPES = ['text/plain', 'text/vtt'];
+const ALLOWED_DOC_TYPES = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const ALLOWED_EXTENSIONS = ['.txt', '.vtt', '.docx'];
+
+function isAllowedFile(file) {
+  const allTypes = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_TEXT_TYPES, ...ALLOWED_DOC_TYPES];
+  if (allTypes.includes(file.mimetype)) return true;
+  
+  // Also check by extension for files with incorrect/missing MIME types
+  const ext = path.extname(file.originalname).toLowerCase();
+  return ALLOWED_EXTENSIONS.includes(ext);
+}
+
+function isImageFile(file) {
+  return ALLOWED_IMAGE_TYPES.includes(file.mimetype) || 
+    file.mimetype.startsWith('image/');
+}
+
+function isTextFile(file) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  return ALLOWED_TEXT_TYPES.includes(file.mimetype) || 
+    ext === '.txt' || ext === '.vtt';
+}
+
+function isDocxFile(file) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  return file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    ext === '.docx';
+}
+
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
+    if (isAllowedFile(file)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.'));
+      cb(new Error('Invalid file type. Allowed: JPEG, PNG, GIF, WebP, TXT, VTT, DOCX'));
     }
   }
 });
+
+// Extract text from DOCX file (simple extraction without external dependencies)
+async function extractDocxText(filePath) {
+  const AdmZip = (await import('adm-zip')).default;
+  const zip = new AdmZip(filePath);
+  const documentXml = zip.readAsText('word/document.xml');
+  
+  // Simple XML text extraction - get text between <w:t> tags
+  const textMatches = documentXml.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+  const text = textMatches
+    .map(match => match.replace(/<[^>]+>/g, ''))
+    .join('');
+  
+  // Add paragraph breaks
+  return text.replace(/([.!?])\s*/g, '$1\n');
+}
 
 // Analyze image with OCR
 router.post('/analyze', upload.single('image'), async (req, res) => {
@@ -42,20 +88,34 @@ router.post('/analyze', upload.single('image'), async (req, res) => {
   }
 
   if (!req.file) {
-    return res.status(400).json({ error: 'No image file provided' });
+    return res.status(400).json({ error: 'No file provided' });
   }
 
   const { projectId, analysisType = 'conversation' } = req.body;
 
   try {
-    // Read image as base64
-    const imagePath = req.file.path;
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-    const mimeType = req.file.mimetype;
+    const filePath = req.file.path;
+    let analysis;
 
-    // Analyze with GPT-4 Vision
-    const analysis = await analyzeImage(base64Image, mimeType, analysisType);
+    if (isImageFile(req.file)) {
+      // Read image as base64
+      const imageBuffer = fs.readFileSync(filePath);
+      const base64Image = imageBuffer.toString('base64');
+      const mimeType = req.file.mimetype;
+
+      // Analyze with GPT-4 Vision
+      analysis = await analyzeImage(base64Image, mimeType, analysisType);
+    } else if (isTextFile(req.file)) {
+      // Read text content directly
+      const textContent = fs.readFileSync(filePath, 'utf-8');
+      analysis = await analyzeText(textContent, analysisType);
+    } else if (isDocxFile(req.file)) {
+      // Extract text from DOCX
+      const textContent = await extractDocxText(filePath);
+      analysis = await analyzeText(textContent, analysisType);
+    } else {
+      throw new Error('Unsupported file type');
+    }
 
     // Save to database if projectId provided
     let savedAnalysis = null;

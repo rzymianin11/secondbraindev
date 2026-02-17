@@ -144,6 +144,9 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
   };
 
   const totalPending = tasks.filter(t => t.status !== 'done').length;
+  const totalDone = tasks.filter(t => t.status === 'done').length;
+  const totalTasks = tasks.length;
+  const progressPercent = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
 
   if (loading) {
     return <div className="loading">Loading priorities...</div>;
@@ -155,6 +158,17 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
         <div className="priority-summary">
           <span className="priority-count">{totalPending}</span>
           <span className="priority-label">tasks to do</span>
+          {totalTasks > 0 && (
+            <div className="progress-indicator">
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="progress-text">{totalDone}/{totalTasks} done ({progressPercent}%)</span>
+            </div>
+          )}
         </div>
         <div className="priority-actions">
           <button 
@@ -245,9 +259,11 @@ export default function PriorityList({ projectId, onTaskUpdate }) {
                   <span 
                     className="task-title clickable"
                     onClick={() => setSelectedTask(task)}
+                    title="Click to view details & notes"
                   >
                     {task.title}
                     {task.notes && <span className="task-notes-indicator">📝</span>}
+                    <span className="task-expand-icon">→</span>
                   </span>
                   
                   <select
